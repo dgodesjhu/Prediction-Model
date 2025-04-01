@@ -234,134 +234,132 @@ if st.button("Train and Predict"):
             st.error("Training and validation data must be available.")
         else:
             try:
-                # The rest of your training code continues here unchanged
-
-            X_train, y_train = train_df.iloc[:, :-1].values, train_df.iloc[:, -1].values
-            X_val, y_val = valid_df.iloc[:, :-1].values, valid_df.iloc[:, -1].values
-
-            if model_type == "ANN":
-                if standardize:
-                    scaler = StandardScaler()
-                    X_train = scaler.fit_transform(X_train)
-                    X_val = scaler.transform(X_val)
-
-                X_train_t = torch.tensor(X_train, dtype=torch.float32)
-                y_train_t = torch.tensor(y_train.reshape(-1, 1), dtype=torch.float32)
-                X_val_t = torch.tensor(X_val, dtype=torch.float32)
-                y_val_t = torch.tensor(y_val.reshape(-1, 1), dtype=torch.float32)
-
-                model = SimpleANN(X_train.shape[1], hidden_layers, nodes_per_layer, activation)
-                criterion = nn.BCEWithLogitsLoss()
-                optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-
-                train_losses = []
-                val_losses = []
-
-                for epoch in range(epochs):
-                    model.train()
-                    optimizer.zero_grad()
-                    outputs = model(X_train_t)
-                    loss = criterion(outputs, y_train_t)
-                    loss.backward()
-                    optimizer.step()
-                    train_losses.append(loss.item())
-
-                    model.eval()
-                    with torch.no_grad():
-                        val_outputs = model(X_val_t)
-                        val_loss = criterion(val_outputs, y_val_t)
-                        val_losses.append(val_loss.item())
-
-                with torch.no_grad():
-                    y_val_probs = torch.sigmoid(model(X_val_t)).numpy().flatten()
-                    y_val_pred = (y_val_probs >= 0.5).astype(int)
-
-                fig, ax = plt.subplots(figsize=(4, 3))
-                ax.plot(train_losses, label="Train Loss")
-                ax.plot(val_losses, label="Val Loss")
-                ax.set_title("Loss Curve", fontsize=12)
-                ax.set_xlabel("Epochs", fontsize=10)
-                ax.set_ylabel("Loss", fontsize=10)
-                ax.legend()
-                plt.tight_layout()
-                buf_loss = io.BytesIO()
-                fig.savefig(buf_loss, format="png", dpi=100, bbox_inches="tight")
-                buf_loss.seek(0)
-                st.image(buf_loss, caption="Training & Validation Loss", width=400)
-                plt.close(fig)
-
-            else:
-                if model_type == "Decision Tree":
-                    model = DecisionTreeClassifier(max_depth=max_depth)
-                elif model_type == "Random Forest":
-                    model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth,
-                                                   max_features=max_features, criterion=criterion)
-                elif model_type == "Boosted Trees":
-                    model = GradientBoostingClassifier(n_estimators=n_estimators, max_depth=max_depth)
-
-                model.fit(X_train, y_train)
-                y_val_probs = model.predict_proba(X_val)[:, 1]
-                y_val_pred = model.predict(X_val)
-                st.info("Tree models are not trained in epochs like ANNs, so loss curves aren't applicable here.")
-
-            cm = confusion_matrix(y_val, y_val_pred)
-            tn, fp, fn, tp = cm.ravel()
-            sensitivity = recall_score(y_val, y_val_pred, pos_label=1)
-            specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
-            auc = roc_auc_score(y_val, y_val_probs)
-            f1 = f1_score(y_val, y_val_pred)
-            precision = precision_score(y_val, y_val_pred, pos_label=1)
-            recall = sensitivity  # for clarity
-
-            st.subheader("Validation Metrics")
-
-            fig_cm, ax_cm = plt.subplots(figsize=(2.5, 2.5))
-            sns.heatmap(
-                cm,
-                annot=True,
-                fmt='d',
-                cmap='Blues',
-                cbar=False,
-                xticklabels=["Pred 0", "Pred 1"],
-                yticklabels=["Actual 0", "Actual 1"],
-                annot_kws={"size": 10},
-                linewidths=0.5,
-                linecolor='gray',
-                ax=ax_cm
-            )
-            ax_cm.set_title("Confusion Matrix", fontsize=12)
-            ax_cm.set_xlabel("Predicted", fontsize=10)
-            ax_cm.set_ylabel("Actual", fontsize=10)
-            ax_cm.tick_params(axis='both', labelsize=10)
-            plt.tight_layout()
-            buf = io.BytesIO()
-            fig_cm.savefig(buf, format="png", dpi=100, bbox_inches="tight")
-            buf.seek(0)
-            st.image(buf, caption="Confusion Matrix", width=300)
-            plt.close(fig_cm)
-
-            st.json({
-                "Precision": round(precision, 3),
-                "Recall (Sensitivity)": round(recall, 3),
-                "Specificity": round(specificity, 3),
-                "AUC": round(auc, 3),
-                "F1 Score": round(f1, 3)
-            })
-
-            if test_file:
-                test_file.seek(0)
-                test_df = pd.read_csv(test_file).apply(pd.to_numeric, errors='coerce').dropna()
-                X_test = test_df.values
+                X_train, y_train = train_df.iloc[:, :-1].values, train_df.iloc[:, -1].values
+                X_val, y_val = valid_df.iloc[:, :-1].values, valid_df.iloc[:, -1].values
+    
                 if model_type == "ANN":
                     if standardize:
-                        X_test = scaler.transform(X_test)
-                    X_test_t = torch.tensor(X_test, dtype=torch.float32)
+                        scaler = StandardScaler()
+                        X_train = scaler.fit_transform(X_train)
+                        X_val = scaler.transform(X_val)
+    
+                    X_train_t = torch.tensor(X_train, dtype=torch.float32)
+                    y_train_t = torch.tensor(y_train.reshape(-1, 1), dtype=torch.float32)
+                    X_val_t = torch.tensor(X_val, dtype=torch.float32)
+                    y_val_t = torch.tensor(y_val.reshape(-1, 1), dtype=torch.float32)
+    
+                    model = SimpleANN(X_train.shape[1], hidden_layers, nodes_per_layer, activation)
+                    criterion = nn.BCEWithLogitsLoss()
+                    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    
+                    train_losses = []
+                    val_losses = []
+    
+                    for epoch in range(epochs):
+                        model.train()
+                        optimizer.zero_grad()
+                        outputs = model(X_train_t)
+                        loss = criterion(outputs, y_train_t)
+                        loss.backward()
+                        optimizer.step()
+                        train_losses.append(loss.item())
+    
+                        model.eval()
+                        with torch.no_grad():
+                            val_outputs = model(X_val_t)
+                            val_loss = criterion(val_outputs, y_val_t)
+                            val_losses.append(val_loss.item())
+    
                     with torch.no_grad():
-                        preds = torch.sigmoid(model(X_test_t)).numpy().flatten()
+                        y_val_probs = torch.sigmoid(model(X_val_t)).numpy().flatten()
+                        y_val_pred = (y_val_probs >= 0.5).astype(int)
+    
+                    fig, ax = plt.subplots(figsize=(4, 3))
+                    ax.plot(train_losses, label="Train Loss")
+                    ax.plot(val_losses, label="Val Loss")
+                    ax.set_title("Loss Curve", fontsize=12)
+                    ax.set_xlabel("Epochs", fontsize=10)
+                    ax.set_ylabel("Loss", fontsize=10)
+                    ax.legend()
+                    plt.tight_layout()
+                    buf_loss = io.BytesIO()
+                    fig.savefig(buf_loss, format="png", dpi=100, bbox_inches="tight")
+                    buf_loss.seek(0)
+                    st.image(buf_loss, caption="Training & Validation Loss", width=400)
+                    plt.close(fig)
+    
                 else:
-                    preds = model.predict_proba(X_test)[:, 1]
-                st.subheader("Predictions on Test Set")
-                st.json(preds.tolist())
+                    if model_type == "Decision Tree":
+                        model = DecisionTreeClassifier(max_depth=max_depth)
+                    elif model_type == "Random Forest":
+                        model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth,
+                                                       max_features=max_features, criterion=criterion)
+                    elif model_type == "Boosted Trees":
+                        model = GradientBoostingClassifier(n_estimators=n_estimators, max_depth=max_depth)
+    
+                    model.fit(X_train, y_train)
+                    y_val_probs = model.predict_proba(X_val)[:, 1]
+                    y_val_pred = model.predict(X_val)
+                    st.info("Tree models are not trained in epochs like ANNs, so loss curves aren't applicable here.")
+
+                cm = confusion_matrix(y_val, y_val_pred)
+                tn, fp, fn, tp = cm.ravel()
+                sensitivity = recall_score(y_val, y_val_pred, pos_label=1)
+                specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
+                auc = roc_auc_score(y_val, y_val_probs)
+                f1 = f1_score(y_val, y_val_pred)
+                precision = precision_score(y_val, y_val_pred, pos_label=1)
+                recall = sensitivity  # for clarity
+    
+                st.subheader("Validation Metrics")
+    
+                fig_cm, ax_cm = plt.subplots(figsize=(2.5, 2.5))
+                sns.heatmap(
+                    cm,
+                    annot=True,
+                    fmt='d',
+                    cmap='Blues',
+                    cbar=False,
+                    xticklabels=["Pred 0", "Pred 1"],
+                    yticklabels=["Actual 0", "Actual 1"],
+                    annot_kws={"size": 10},
+                    linewidths=0.5,
+                    linecolor='gray',
+                    ax=ax_cm
+                )
+                ax_cm.set_title("Confusion Matrix", fontsize=12)
+                ax_cm.set_xlabel("Predicted", fontsize=10)
+                ax_cm.set_ylabel("Actual", fontsize=10)
+                ax_cm.tick_params(axis='both', labelsize=10)
+                plt.tight_layout()
+                buf = io.BytesIO()
+                fig_cm.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+                buf.seek(0)
+                st.image(buf, caption="Confusion Matrix", width=300)
+                plt.close(fig_cm)
+    
+                st.json({
+                    "Precision": round(precision, 3),
+                    "Recall (Sensitivity)": round(recall, 3),
+                    "Specificity": round(specificity, 3),
+                    "AUC": round(auc, 3),
+                    "F1 Score": round(f1, 3)
+                })
+    
+                if test_file:
+                    test_file.seek(0)
+                    test_df = pd.read_csv(test_file).apply(pd.to_numeric, errors='coerce').dropna()
+                    X_test = test_df.values
+                    if model_type == "ANN":
+                        if standardize:
+                            X_test = scaler.transform(X_test)
+                        X_test_t = torch.tensor(X_test, dtype=torch.float32)
+                        with torch.no_grad():
+                            preds = torch.sigmoid(model(X_test_t)).numpy().flatten()
+                    else:
+                        preds = model.predict_proba(X_test)[:, 1]
+                    st.subheader("Predictions on Test Set")
+                    st.json(preds.tolist())
 
         except Exception as e:
             st.error(f"Error during training or evaluation: {str(e)}")
