@@ -92,11 +92,11 @@ if model_type == "ANN":
     if train_df_cached is not None:
         max_nodes = train_df_cached.shape[1] - 1
 
-    hidden_layers = st.sidebar.slider("Hidden Layers", 1, 5, 2)
+    hidden_layers = st.sidebar.slider("Hidden Layers", 0, 10, 2)
     nodes_per_layer = st.sidebar.slider("Nodes per Layer", 4, max_nodes, 4, step=1)
     activation = st.sidebar.selectbox("Activation Function", ['relu', 'sigmoid', 'tanh'])
     learning_rate = st.sidebar.slider("Learning Rate", 0.001, 0.01, 0.001, step=0.001, format="%.4f")
-    epochs = st.sidebar.slider("Epochs", 1, 250, 20, step=5)
+    epochs = st.sidebar.slider("Epochs", 3, 250, 20, step=5)
     standardize = st.sidebar.checkbox("Standardize features", value=True)
 
 # --- Tree Model Hyperparameters ---
