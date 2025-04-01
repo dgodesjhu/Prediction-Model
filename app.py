@@ -88,13 +88,6 @@ def load_data(url):
     except Exception as e:
         st.error(f"Failed to load data from {url}. Error: {e}")
         return None
-        
-# --- Load Example Dataset if selected ---
-if data_option == "Use Provided Dataset":
-    example_dataset = st.sidebar.selectbox(
-        "Choose example dataset:",
-        ["Bank Marketing"]
-    )
 
     if example_dataset == "Bank Marketing":
         base_url = "https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing"
