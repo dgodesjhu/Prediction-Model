@@ -89,23 +89,23 @@ def load_data(url):
         st.error(f"Failed to load data from {url}. Error: {e}")
         return None
 
-    if example_dataset == "Bank Marketing":
-        base_url = "https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing"
-        train_url = f"{base_url}/train.csv"
-        valid_url = f"{base_url}/validation.csv"
-        test_url = f"{base_url}/test.csv"
+if example_dataset == "Bank Marketing":
+    base_url = "https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing"
+    train_url = f"{base_url}/train.csv"
+    valid_url = f"{base_url}/validation.csv"
+    test_url = f"{base_url}/test.csv"
 
-        train_df = load_data(train_url)
-        valid_df = load_data(valid_url)
-        test_df = load_data(test_url)
+    train_df = load_data(train_url)
+    valid_df = load_data(valid_url)
+    test_df = load_data(test_url)
 
-        if train_df is not None and valid_df is not None and test_df is not None:
-            st.session_state["train_df"] = train_df
-            st.session_state["valid_df"] = valid_df
-            st.session_state["test_df"] = test_df
-        else:
-            st.error("Failed to load one or more datasets. Please check the URLs and try again.")
-            st.stop()
+    if train_df is not None and valid_df is not None and test_df is not None:
+        st.session_state["train_df"] = train_df
+        st.session_state["valid_df"] = valid_df
+        st.session_state["test_df"] = test_df
+    else:
+        st.error("Failed to load one or more datasets. Please check the URLs and try again.")
+        st.stop()
             
 # --- Upload option fallback ---
 else:
