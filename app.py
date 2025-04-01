@@ -72,12 +72,23 @@ data_option = st.sidebar.radio(
 )
 
 example_dataset = None
-if data_option == "Use Example Dataset":
+if data_option == "Use Provided Dataset":
     example_dataset = st.sidebar.selectbox(
         "Choose dataset:",
         ["Bank Marketing", "Customer Retention/Churn (coming soon)"]
     )
 
+# Function to load data from a URL
+@st.cache_data
+def load_data(url):
+    try:
+        data = pd.read_csv(url)
+        st.success(f"Successfully loaded data from {url}")
+        return data
+    except Exception as e:
+        st.error(f"Failed to load data from {url}. Error: {e}")
+        return None
+        
 # --- Load Example Dataset if selected ---
 if data_option == "Use Provided Dataset":
     example_dataset = st.sidebar.selectbox(
