@@ -84,7 +84,7 @@ if data_option == "Use Provided Dataset":
 
     if example_dataset == "Bank Marketing":
         def load_example_data():
-            base_url = "https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing"
+            base_url = "https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/tree/main/data/bank_marketing"
             st.write("🔍 Trying to read example data from:", base_url)
             train = pd.read_csv(f"{base_url}/train.csv").apply(pd.to_numeric, errors='coerce').dropna()
             valid = pd.read_csv(f"{base_url}/validation.csv").apply(pd.to_numeric, errors='coerce').dropna()
