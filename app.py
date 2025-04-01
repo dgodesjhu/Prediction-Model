@@ -68,33 +68,41 @@ st.write("Upload training and validation data, choose your model and hyperparame
 st.sidebar.header("Choose Dataset")
 data_option = st.sidebar.radio(
     "Select data source:",
-    ["Use Example Dataset", "Upload Your Own Data"]
+    ["Use Provided Dataset", "Upload Your Own Data"]
 )
 
 example_dataset = None
 if data_option == "Use Example Dataset":
     example_dataset = st.sidebar.selectbox(
-        "Choose example dataset:",
+        "Choose dataset:",
         ["Bank Marketing", "Customer Retention/Churn (coming soon)"]
     )
 
 # --- Load Example Dataset if selected ---
-if data_option == "Use Example Dataset" and example_dataset == "Bank Marketing":
-    @st.cache_data
-    def load_example_data():
-     #   base_url = "https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing"
-        train = pd.read_csv("https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing/train.csv").apply(pd.to_numeric, errors='coerce').dropna()
-        valid = pd.read_csv("https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing/validation.csv").apply(pd.to_numeric, errors='coerce').dropna()
-        test = pd.read_csv("https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing/test.csv").apply(pd.to_numeric, errors='coerce').dropna()
-        return train, valid, test
-    
-    train_df_cached, valid_df_cached, test_df_cached = load_example_data()
+if data_option == "Use Provided Dataset":
+    example_dataset = st.sidebar.selectbox(
+        "Choose example dataset:",
+        ["Bank Marketing"]
+    )
 
-    st.session_state["train_df_cached"] = train_df_cached
-    st.session_state["valid_df_cached"] = valid_df_cached
-    st.session_state["test_df_cached"] = test_df_cached
-    train_file = valid_file = test_file = None  # disables uploads
+    if example_dataset == "Bank Marketing":
+        base_url = "https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing"
+        train_url = f"{base_url}/train.csv"
+        valid_url = f"{base_url}/validation.csv"
+        test_url = f"{base_url}/test.csv"
 
+        train_df = load_data(train_url)
+        valid_df = load_data(valid_url)
+        test_df = load_data(test_url)
+
+        if train_df is not None and valid_df is not None and test_df is not None:
+            st.session_state["train_df"] = train_df
+            st.session_state["valid_df"] = valid_df
+            st.session_state["test_df"] = test_df
+        else:
+            st.error("Failed to load one or more datasets. Please check the URLs and try again.")
+            st.stop()
+            
 # --- Upload option fallback ---
 else:
     uploaded_train = st.sidebar.file_uploader("Training CSV (with labels)", type="csv", key="train")
