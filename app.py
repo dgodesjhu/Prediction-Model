@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.metrics import confusion_matrix, roc_auc_score, f1_score, recall_score
+from sklearn.metrics import confusion_matrix, roc_auc_score, f1_score, recall_score, precision_score
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -216,6 +216,8 @@ if st.button("Train and Predict"):
             specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
             auc = roc_auc_score(y_val, y_val_probs)
             f1 = f1_score(y_val, y_val_pred)
+            precision = precision_score(y_val, y_val_pred, pos_label=1)
+            recall = sensitivity  # for clarity
 
             st.subheader("Validation Metrics")
 
@@ -245,7 +247,8 @@ if st.button("Train and Predict"):
             plt.close(fig_cm)
 
             st.json({
-                "Sensitivity": round(sensitivity, 3),
+                "Precision": round(precision, 3),
+                "Recall (Sensitivity)": round(recall, 3),
                 "Specificity": round(specificity, 3),
                 "AUC": round(auc, 3),
                 "F1 Score": round(f1, 3)
