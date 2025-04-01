@@ -12,6 +12,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
 import io
+import random
+
+def set_seed(seed=42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 warnings.filterwarnings("ignore")
 
@@ -114,6 +123,8 @@ elif model_type == "Boosted Trees":
     n_estimators = st.sidebar.slider("Boosting Rounds", 10, 200, 50, step=10)
 
 # --- ANN Model Class ---
+set_seed(42)
+
 class SimpleANN(nn.Module):
     def __init__(self, input_dim, hidden_layers, nodes, activation):
         super(SimpleANN, self).__init__()
