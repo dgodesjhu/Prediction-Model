@@ -68,18 +68,18 @@ st.write("Upload training and validation data, choose your model and hyperparame
 st.sidebar.header("Choose Dataset")
 data_option = st.sidebar.radio(
     "Select data source:",
-    ["Use Example Dataset", "Upload Your Own Data"]
+    ["Use Provided Dataset", "Upload Your Own Data"]
 )
 
 example_dataset = None
-if data_option == "Use Example Dataset":
+if data_option == "Use Provided Dataset":
     example_dataset = st.sidebar.selectbox(
         "Choose example dataset:",
         ["Bank Marketing", "Customer Retention/Churn (coming soon)"]
     )
 
-# --- Load Example Dataset if selected ---
-if data_option == "Use Example Dataset" and example_dataset == "Bank Marketing":
+# --- Load Provided Dataset if selected ---
+if data_option == "Use Provided Dataset" and example_dataset == "Bank Marketing":
     @st.cache_data
     def load_example_data():
         base_url = "https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME/main/data/bank_marketing"
@@ -121,17 +121,6 @@ else:
         except Exception as e:
             st.warning("Could not parse training CSV file.")
             train_df_cached = None
-
-if uploaded_train:
-    st.session_state["train_file"] = uploaded_train
-if uploaded_valid:
-    st.session_state["valid_file"] = uploaded_valid
-if uploaded_test:
-    st.session_state["test_file"] = uploaded_test
-
-train_file = st.session_state.get("train_file", None)
-valid_file = st.session_state.get("valid_file", None)
-test_file = st.session_state.get("test_file", None)
 
 # --- Cache parsed training data to avoid re-reading errors ---
 train_df_cached = None
