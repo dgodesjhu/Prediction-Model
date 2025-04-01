@@ -134,13 +134,14 @@ else:
             st.warning("Could not parse training CSV file.")
             train_df_cached = None
 
-if uploaded_train:
-    st.session_state["train_file"] = uploaded_train
-if uploaded_valid:
-    st.session_state["valid_file"] = uploaded_valid
-if uploaded_test:
-    st.session_state["test_file"] = uploaded_test
-
+if data_option == "Upload Your Own Data":
+    if uploaded_train:
+        st.session_state["train_file"] = uploaded_train
+    if uploaded_valid:
+        st.session_state["valid_file"] = uploaded_valid
+    if uploaded_test:
+        st.session_state["test_file"] = uploaded_test
+        
 train_file = st.session_state.get("train_file", None)
 valid_file = st.session_state.get("valid_file", None)
 test_file = st.session_state.get("test_file", None)
