@@ -209,15 +209,32 @@ class SimpleANN(nn.Module):
 
 # --- Train & Predict ---
 if st.button("Train and Predict"):
-    if not train_file or not valid_file:
-        st.error("Please upload both training and validation files.")
+# Determine dataset source
+    train_df = None
+    valid_df = None
+    test_df = None
+    
+    if data_option == "Use Provided Dataset" and example_dataset == "Bank Marketing":
+        train_df = st.session_state.get("train_df", None)
+        valid_df = st.session_state.get("valid_df", None)
+        test_df = st.session_state.get("test_df", None)
     else:
-        try:
+        if train_file:
             train_file.seek(0)
             train_df = pd.read_csv(train_file).apply(pd.to_numeric, errors='coerce').dropna()
-
+        if valid_file:
             valid_file.seek(0)
             valid_df = pd.read_csv(valid_file).apply(pd.to_numeric, errors='coerce').dropna()
+        if test_file:
+            test_file.seek(0)
+            test_df = pd.read_csv(test_file).apply(pd.to_numeric, errors='coerce').dropna()
+    
+    if st.button("Train and Predict"):
+        if train_df is None or valid_df is None:
+            st.error("Training and validation data must be available.")
+        else:
+            try:
+                # The rest of your training code continues here unchanged
 
             X_train, y_train = train_df.iloc[:, :-1].values, train_df.iloc[:, -1].values
             X_val, y_val = valid_df.iloc[:, :-1].values, valid_df.iloc[:, -1].values
