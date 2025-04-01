@@ -86,6 +86,16 @@ if data_option == "Use Provided Dataset" and example_dataset == "Bank Marketing"
         train = pd.read_csv(f"{base_url}/train.csv").apply(pd.to_numeric, errors='coerce').dropna()
         valid = pd.read_csv(f"{base_url}/validation.csv").apply(pd.to_numeric, errors='coerce').dropna()
         test = pd.read_csv(f"{base_url}/test.csv").apply(pd.to_numeric, errors='coerce').dropna()
+
+        # --- Debug: test data loading directly ---
+        test_url = f"{base_url}/train.csv"
+        st.write("🔍 Trying to read example data from:", test_url)
+        try:
+            df_test = pd.read_csv(test_url)
+            st.success("✅ Successfully read train.csv from GitHub.")
+        except Exception as e:
+            st.error(f"❌ Failed to load data from GitHub: {e}")
+        
         return train, valid, test
 
     train_df_cached, valid_df_cached, test_df_cached = load_example_data()
