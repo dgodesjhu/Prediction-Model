@@ -82,12 +82,12 @@ if data_option == "Use Example Dataset":
 if data_option == "Use Example Dataset" and example_dataset == "Bank Marketing":
     @st.cache_data
     def load_example_data():
-        base_url = "https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing"
-        train = pd.read_csv(f"{base_url}/train.csv").apply(pd.to_numeric, errors='coerce').dropna()
-        valid = pd.read_csv(f"{base_url}/validation.csv").apply(pd.to_numeric, errors='coerce').dropna()
-        test = pd.read_csv(f"{base_url}/test.csv").apply(pd.to_numeric, errors='coerce').dropna()
+     #   base_url = "https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing"
+        train = pd.read_csv("https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing/train.csv").apply(pd.to_numeric, errors='coerce').dropna()
+        valid = pd.read_csv("https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing/validation.csv").apply(pd.to_numeric, errors='coerce').dropna()
+        test = pd.read_csv("https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing/test.csv").apply(pd.to_numeric, errors='coerce').dropna()
         return train, valid, test
-    write("got jere")
+    
     train_df_cached, valid_df_cached, test_df_cached = load_example_data()
 
     st.session_state["train_df_cached"] = train_df_cached
