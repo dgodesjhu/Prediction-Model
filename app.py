@@ -80,7 +80,7 @@ if data_option == "Use Provided Dataset":
 
 # --- Load Provided Dataset if selected ---
 if data_option == "Use Provided Dataset" and example_dataset == "Bank Marketing":
-    @st.cache_data
+#    @st.cache_data
     def load_example_data():
         base_url = "https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing"
         train = pd.read_csv(f"{base_url}/train.csv").apply(pd.to_numeric, errors='coerce').dropna()
