@@ -162,11 +162,13 @@ st.sidebar.header("Model Settings")
 model_type = st.sidebar.selectbox("Select Model Type", ["ANN", "Decision Tree", "Random Forest", "Boosted Trees"])
 
 # --- ANN Hyperparameters ---
-max_nodes = 128
 if model_type == "ANN":
-    if train_df_cached is not None:
-        max_nodes = train_df_cached.shape[1] - 1
-
+    num_features = 4  # default fallback
+    if 'train_df_cached' in st.session_state:
+        num_features = st.session_state["train_df_cached"].shape[1] - 1
+    elif "train_df" in st.session_state:
+        num_features = st.session_state["train_df"].shape[1] - 1
+    max_nodes = max(num_features, 4)
     hidden_layers = st.sidebar.slider("Hidden Layers", 0, 10, 2)
     nodes_per_layer = st.sidebar.slider("Nodes per Layer", 4, max_nodes, 4, step=1)
     activation = st.sidebar.selectbox("Activation Function", ['relu', 'sigmoid', 'tanh'])
