@@ -162,13 +162,26 @@ st.sidebar.header("Model Settings")
 model_type = st.sidebar.selectbox("Select Model Type", ["ANN", "Decision Tree", "Random Forest", "Boosted Trees"])
 
 # --- ANN Hyperparameters ---
+def get_input_feature_count():
+    if data_option == "Upload Your Own Data":
+        if "train_df_cached" in st.session_state:
+            return st.session_state["train_df_cached"].shape[1] - 1
+        elif "train_file" in st.session_state:
+            try:
+                st.session_state["train_file"].seek(0)
+                df = pd.read_csv(st.session_state["train_file"]).apply(pd.to_numeric, errors='coerce').dropna()
+                return df.shape[1] - 1
+            except:
+                return 4
+    elif data_option == "Use Provided Dataset":
+        if "train_df" in st.session_state:
+            return st.session_state["train_df"].shape[1] - 1
+    return 4  # fallback
+
 if model_type == "ANN":
-    num_features = 4  # default fallback
-    if 'train_df_cached' in st.session_state:
-        num_features = st.session_state["train_df_cached"].shape[1] - 1
-    elif "train_df" in st.session_state:
-        num_features = st.session_state["train_df"].shape[1] - 1
+    num_features = get_input_feature_count()
     max_nodes = max(num_features, 4)
+
     hidden_layers = st.sidebar.slider("Hidden Layers", 0, 10, 2)
     nodes_per_layer = st.sidebar.slider("Nodes per Layer", 4, max_nodes, 4, step=1)
     activation = st.sidebar.selectbox("Activation Function", ['relu', 'sigmoid', 'tanh'])
