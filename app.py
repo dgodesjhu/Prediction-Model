@@ -83,10 +83,10 @@ if data_option == "Use Provided Dataset":
 def load_data(url):
     try:
         data = pd.read_csv(url)
-        st.success(f"Successfully loaded data from {url}")
+#        st.success(f"Successfully loaded data from {url}")
         return data
     except Exception as e:
-        st.error(f"Failed to load data from {url}. Error: {e}")
+#        st.error(f"Failed to load data from {url}. Error: {e}")
         return None
 
 if example_dataset == "Bank Marketing":
@@ -207,7 +207,6 @@ class SimpleANN(nn.Module):
     def forward(self, x):
         return self.net(x)
 
-# --- Train & Predict ---
 # --- Train & Predict ---
 if st.button("Train and Predict"):
     # Determine dataset source
@@ -346,9 +345,7 @@ if st.button("Train and Predict"):
                 "F1 Score": round(f1, 3)
             })
 
-            if test_file:
-                test_file.seek(0)
-                test_df = pd.read_csv(test_file).apply(pd.to_numeric, errors='coerce').dropna()
+            if test_df is not None:
                 X_test = test_df.values
                 if model_type == "ANN":
                     if standardize:
@@ -360,6 +357,6 @@ if st.button("Train and Predict"):
                     preds = model.predict_proba(X_test)[:, 1]
                 st.subheader("Predictions on Test Set")
                 st.json(preds.tolist())
-
+                
         except Exception as e:
             st.error(f"Error during training or evaluation: {str(e)}")
