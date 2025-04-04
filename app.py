@@ -402,8 +402,8 @@ if st.button("Train and Predict"):
                 joblib.dump(model, model_filename)
 
                 try:
-                    sender_email = "your_email@jhu.edu"  # 🔁 Replace with yours
-                    receiver_email = "your_email@jhu.edu"
+                    sender_email = "dgodes@jhu.edu"  # 🔁 Replace with yours
+                    receiver_email = "dgodes@jhu.edu"
                     email_password = st.secrets["EMAIL_PASSWORD"]  # Set this in Streamlit secrets
 
                     msg = EmailMessage()
@@ -415,7 +415,7 @@ if st.button("Train and Predict"):
                     with open(model_filename, "rb") as f:
                         msg.add_attachment(f.read(), maintype="application", subtype="octet-stream", filename=model_filename)
 
-                    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+                    with smtplib.startls("smtp.office.com", 587) as smtp:
                         smtp.login(sender_email, email_password)
                         smtp.send_message(msg)
 
