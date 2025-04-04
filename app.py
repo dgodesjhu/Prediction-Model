@@ -4,6 +4,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.metrics import confusion_matrix, roc_auc_score, f1_score, recall_score, precision_score
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
@@ -17,14 +19,39 @@ from email.message import EmailMessage
 # ---------------------- Config & Setup ----------------------
 st.set_page_config(page_title="Prediction Model", layout="wide")
 
-def set_seed(seed=42):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+# ✅ Restore custom styling
+st.markdown("""
+    <style>
+        html, body, .stApp {
+            background-color: #f4faff;
+            color: #003366;
+            font-family: 'Segoe UI', sans-serif;
+        }
 
-set_seed(42)
+        .block-container > h1, h2, h3, h4 {
+            background-color: #003366;
+            color: white !important;
+            padding: 0.5em 1em;
+            border-radius: 6px;
+        }
+
+        button[kind="primary"] {
+            background-color: #0073e6 !important;
+            color: white !important;
+            border: none;
+            border-radius: 6px;
+        }
+
+        .stSlider > div > div {
+            color: #003366;
+        }
+
+        .stSelectbox, .stTextInput, .stFileUploader {
+            background-color: white;
+            border-radius: 6px;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 st.title("Prediction Model")
 
@@ -54,43 +81,81 @@ class SimpleANN(nn.Module):
 
 # ---------------------- Model Training ----------------------
 st.sidebar.header("Model Settings")
-hidden_layers = st.sidebar.slider("Hidden Layers", 1, 5, 2)
-nodes = st.sidebar.slider("Nodes per Layer", 4, 64, 16)
-activation = st.sidebar.selectbox("Activation", ["relu", "sigmoid", "tanh"])
-learning_rate = st.sidebar.slider("Learning Rate", 0.001, 0.01, 0.001, step=0.001, format="%.4f")
-epochs = st.sidebar.slider("Epochs", 10, 250, 50, step=10)
-standardize = st.sidebar.checkbox("Standardize Features", value=True)
+model_type = st.sidebar.selectbox("Model Type", ["ANN", "Decision Tree", "Random Forest", "Boosted Trees"])
+
+# Common settings
+standardize = st.sidebar.checkbox("Standardize Features (ANN only)", value=True)
+
+# Hyperparameters for ANN
+if model_type == "ANN":
+    hidden_layers = st.sidebar.slider("Hidden Layers", 1, 5, 2)
+    nodes = st.sidebar.slider("Nodes per Layer", 4, 64, 16)
+    activation = st.sidebar.selectbox("Activation", ["relu", "sigmoid", "tanh"])
+    learning_rate = st.sidebar.slider("Learning Rate", 0.001, 0.01, 0.001, step=0.001, format="%.4f")
+    epochs = st.sidebar.slider("Epochs", 10, 250, 50, step=10)
+
+# Hyperparameters for Tree-based models
+if model_type == "Decision Tree":
+    max_depth = st.sidebar.slider("Max Depth", 1, 20, 5)
+
+if model_type == "Random Forest":
+    n_estimators = st.sidebar.slider("Number of Trees", 10, 200, 100, step=10)
+    max_depth = st.sidebar.slider("Max Depth", 1, 20, 5)
+    max_features = st.sidebar.slider("Max Features", 1, 10, 5)
+
+if model_type == "Boosted Trees":
+    n_estimators = st.sidebar.slider("Boosting Rounds", 10, 200, 100, step=10)
+    max_depth = st.sidebar.slider("Max Depth", 1, 20, 3)
 
 if st.button("Train and Predict"):
     try:
         X_train, y_train = train_df.iloc[:, :-1].values, train_df.iloc[:, -1].values
         X_val, y_val = valid_df.iloc[:, :-1].values, valid_df.iloc[:, -1].values
 
-        if standardize:
-            scaler = StandardScaler()
-            X_train = scaler.fit_transform(X_train)
-            X_val = scaler.transform(X_val)
+        if model_type == "ANN":
+            if standardize:
+                scaler = StandardScaler()
+                X_train = scaler.fit_transform(X_train)
+                X_val = scaler.transform(X_val)
 
-        X_train_t = torch.tensor(X_train, dtype=torch.float32)
-        y_train_t = torch.tensor(y_train.reshape(-1, 1), dtype=torch.float32)
-        X_val_t = torch.tensor(X_val, dtype=torch.float32)
-        y_val_t = torch.tensor(y_val.reshape(-1, 1), dtype=torch.float32)
+            X_train_t = torch.tensor(X_train, dtype=torch.float32)
+            y_train_t = torch.tensor(y_train.reshape(-1, 1), dtype=torch.float32)
+            X_val_t = torch.tensor(X_val, dtype=torch.float32)
+            y_val_t = torch.tensor(y_val.reshape(-1, 1), dtype=torch.float32)
 
-        model = SimpleANN(X_train.shape[1], hidden_layers, nodes, activation)
-        criterion = nn.BCEWithLogitsLoss()
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+            model = SimpleANN(X_train.shape[1], hidden_layers, nodes, activation)
+            criterion = nn.BCEWithLogitsLoss()
+            optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-        for epoch in range(epochs):
-            model.train()
-            optimizer.zero_grad()
-            loss = criterion(model(X_train_t), y_train_t)
-            loss.backward()
-            optimizer.step()
+            for epoch in range(epochs):
+                model.train()
+                optimizer.zero_grad()
+                loss = criterion(model(X_train_t), y_train_t)
+                loss.backward()
+                optimizer.step()
 
-        model.eval()
-        with torch.no_grad():
-            y_val_probs = torch.sigmoid(model(X_val_t)).numpy().flatten()
-            y_val_pred = (y_val_probs >= 0.5).astype(int)
+            model.eval()
+            with torch.no_grad():
+                y_val_probs = torch.sigmoid(model(X_val_t)).numpy().flatten()
+                y_val_pred = (y_val_probs >= 0.5).astype(int)
+
+        elif model_type == "Decision Tree":
+            model = DecisionTreeClassifier(max_depth=max_depth)
+            model.fit(X_train, y_train)
+            y_val_probs = model.predict_proba(X_val)[:, 1]
+            y_val_pred = model.predict(X_val)
+
+        elif model_type == "Random Forest":
+            model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features)
+            model.fit(X_train, y_train)
+            y_val_probs = model.predict_proba(X_val)[:, 1]
+            y_val_pred = model.predict(X_val)
+
+        elif model_type == "Boosted Trees":
+            model = GradientBoostingClassifier(n_estimators=n_estimators, max_depth=max_depth)
+            model.fit(X_train, y_train)
+            y_val_probs = model.predict_proba(X_val)[:, 1]
+            y_val_pred = model.predict(X_val)
 
         st.subheader("Validation Metrics")
         st.write({
@@ -120,8 +185,15 @@ if st.session_state.get("model_ready"):
         submitted = st.form_submit_button("Submit Model")
 
         if submitted:
-            if not first_name or not last_name or len(jhu_id) < 2 or section == "Select One":
-                st.warning("Please complete all fields.")
+            st.write(f"First: {first_name}, Last: {last_name}, ID: {jhu_id}, Section: {section}")
+            if (
+                not first_name.strip() or
+                not last_name.strip() or
+                not jhu_id.strip().isdigit() or
+                len(jhu_id.strip()) < 2 or
+                section == "Select One"
+            ):
+                st.warning("Please complete all fields correctly before submitting.")            
             else:
                 try:
                     model = st.session_state["trained_model"]
