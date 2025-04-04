@@ -379,6 +379,7 @@ if st.button("Train and Predict"):
                     first_name = st.text_input("First Name")
                     last_name = st.text_input("Last (Family) Name")
                     jhu_id = st.text_input("JHU ID (9 digits)")
+                    section = st.selectbox("Select Your Campus",["Select One", "DC", "HE"])
                     download_model = st.checkbox("Download a copy of your model (recommended)", value=True)
                     submitted = st.form_submit_button("Submit Model")
                 
@@ -389,16 +390,21 @@ if st.button("Train and Predict"):
                 
                         file_id = last_name + first_name + jhu_id[:2]
                         model_filename = f"Pred file {file_id}.pkl"
-                        email_subject = f"File Submission {last_name}{first_name}"
+                        email_subject = f"{section} File Submission {last_name}{first_name}"
                 
                         # Save model to file
                         joblib.dump(model, model_filename)
                 
                         try:
-                            sender_email = "dgodes@jhu.edu"
+                            sender_email = "davegodes1@gmail.com"
                             receiver_email = "dgodes@jhu.edu"
                             email_password = st.secrets["EMAIL_PASSWORD"]
-                
+
+                            sender_email = "your_verified_gmail@gmail.com"
+                            email_password = st.secrets["EMAIL_PASSWORD"]
+                            smtp_server = "smtp.gmail.com"
+                            smtp_port = 465
+                            
                             msg = EmailMessage()
                             msg["Subject"] = email_subject
                             msg["From"] = sender_email
@@ -409,9 +415,7 @@ if st.button("Train and Predict"):
                                 msg.add_attachment(f.read(), maintype="application", subtype="octet-stream", filename=model_filename)
                 
                             # ✅ Corrected SMTP setup
-                            with smtplib.SMTP("smtp.office365.com", 587) as smtp:
-                                smtp.ehlo()
-                                smtp.starttls()
+                            with smtplib.SMTP_SSL(smtp_server, smtp_port) as smtp:
                                 smtp.login(sender_email, email_password)
                                 smtp.send_message(msg)
                 
@@ -427,12 +431,11 @@ if st.button("Train and Predict"):
                     elif submitted:
                         st.warning("Please fill in all fields before submitting.")
                 
-                # --- Show Download Button if Requested ---
-                if st.session_state.get("submission_success") and st.session_state.get("download_requested"):
-                    with open(st.session_state["download_model_path"], "rb") as f:
-                        st.download_button("Download Your Model", f, file_name=st.session_state["download_model_path"])
         except Exception as e:
             st.error(f"Error during training or evaluation: {str(e)}")
 
-
+    # --- Show Download Button if Requested ---
+        if st.session_state.get("submission_success") and st.session_state.get("download_requested"):
+            with open(st.session_state["download_model_path"], "rb") as f:
+                st.download_button("Download Your Model", f, file_name=st.session_state["download_model_path"])
 
