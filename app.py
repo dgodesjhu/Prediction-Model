@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import io
 import random
-import joblib
 import smtplib
 from email.message import EmailMessage
 
@@ -80,13 +79,9 @@ else:
 st.sidebar.header("Model Settings")
 model_type = st.sidebar.selectbox("Model Type", ["ANN", "Decision Tree", "Random Forest", "Boosted Trees"])
 
-# --- Determine max hidden node count ---
 input_dim = train_df.shape[1] - 1
-
-# --- Common settings ---
 standardize = st.sidebar.checkbox("Standardize Features (ANN only)", value=True)
 
-# --- ANN ---
 if model_type == "ANN":
     hidden_layers = st.sidebar.slider("Hidden Layers", 1, 5, 2)
     nodes = st.sidebar.slider("Nodes per Layer", 4, input_dim, min(input_dim, 16))
@@ -94,7 +89,6 @@ if model_type == "ANN":
     learning_rate = st.sidebar.slider("Learning Rate", 0.001, 0.01, 0.001, step=0.001, format="%.4f")
     epochs = st.sidebar.slider("Epochs", 10, 250, 50, step=10)
 
-# --- Tree models ---
 if model_type in ["Decision Tree", "Random Forest"]:
     criterion = st.sidebar.selectbox("Splitting Criterion", ["gini", "entropy"])
 
@@ -110,7 +104,6 @@ if model_type == "Boosted Trees":
     n_estimators = st.sidebar.slider("Boosting Rounds", 10, 200, 100, step=10)
     max_depth = st.sidebar.slider("Max Depth", 1, 20, 3)
 
-# ---------------------- ANN Model Class ----------------------
 class SimpleANN(nn.Module):
     def __init__(self, input_dim, hidden_layers, nodes, activation):
         super(SimpleANN, self).__init__()
@@ -124,7 +117,6 @@ class SimpleANN(nn.Module):
     def forward(self, x):
         return self.net(x)
 
-# ---------------------- Training ----------------------
 if st.button("Train and Predict"):
     try:
         X_train, y_train = train_df.iloc[:, :-1].values, train_df.iloc[:, -1].values
@@ -162,12 +154,19 @@ if st.button("Train and Predict"):
                 y_val_probs = torch.sigmoid(model(X_val_t)).numpy().flatten()
                 y_val_pred = (y_val_probs >= 0.5).astype(int)
 
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(figsize=(4, 3))
             ax.plot(train_losses, label="Train Loss")
             ax.plot(val_losses, label="Validation Loss")
+            ax.set_title("Loss Curve", fontsize=12)
+            ax.set_xlabel("Epochs", fontsize=10)
+            ax.set_ylabel("Loss", fontsize=10)
             ax.legend()
-            ax.set_title("Loss Curve")
-            st.pyplot(fig)
+            plt.tight_layout()
+            buf = io.BytesIO()
+            fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+            buf.seek(0)
+            st.image(buf, caption="Training & Validation Loss", width=400)
+            plt.close(fig)
 
         else:
             if model_type == "Decision Tree":
@@ -183,17 +182,46 @@ if st.button("Train and Predict"):
 
         st.subheader("Validation Metrics")
         cm = confusion_matrix(y_val, y_val_pred)
-        specificity = cm[0,0] / cm[0].sum() if cm[0].sum() else 0
-        st.write({
-            "Precision": round(precision_score(y_val, y_val_pred), 3),
-            "Recall": round(recall_score(y_val, y_val_pred), 3),
+        tn, fp, fn, tp = cm.ravel()
+        sensitivity = recall_score(y_val, y_val_pred, pos_label=1)
+        specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
+        auc = roc_auc_score(y_val, y_val_probs)
+        f1 = f1_score(y_val, y_val_pred)
+        precision = precision_score(y_val, y_val_pred, pos_label=1)
+        recall = sensitivity
+
+        fig_cm, ax_cm = plt.subplots(figsize=(2.5, 2.5))
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False,
+                    xticklabels=["Pred 0", "Pred 1"], yticklabels=["Actual 0", "Actual 1"],
+                    annot_kws={"size": 10}, linewidths=0.5, linecolor='gray', ax=ax_cm)
+        ax_cm.set_title("Confusion Matrix", fontsize=12)
+        ax_cm.set_xlabel("Predicted", fontsize=10)
+        ax_cm.set_ylabel("Actual", fontsize=10)
+        ax_cm.tick_params(axis='both', labelsize=10)
+        plt.tight_layout()
+        buf = io.BytesIO()
+        fig_cm.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+        buf.seek(0)
+        st.image(buf, caption="Confusion Matrix", width=300)
+        plt.close(fig_cm)
+
+        st.json({
+            "Precision": round(precision, 3),
+            "Recall (Sensitivity)": round(recall, 3),
             "Specificity": round(specificity, 3),
-            "AUC": round(roc_auc_score(y_val, y_val_probs), 3),
-            "F1": round(f1_score(y_val, y_val_pred), 3)
+            "AUC": round(auc, 3),
+            "F1 Score": round(f1, 3)
         })
 
         st.session_state["trained_model"] = model
         st.session_state["model_ready"] = True
+        st.session_state["model_params"] = {
+            "input_dim": input_dim,
+            "hidden_layers": hidden_layers,
+            "nodes": nodes,
+            "activation": activation,
+            "standardize": standardize
+        }
 
     except Exception as e:
         st.error(f"Training failed: {str(e)}")
@@ -216,8 +244,13 @@ if st.session_state.get("model_ready"):
             else:
                 try:
                     model = st.session_state["trained_model"]
-                    filename = f"Pred file {last_name}{first_name}{jhu_id[:2]}.pkl"
-                    joblib.dump(model, filename)
+                    params = st.session_state["model_params"]
+                    filename = f"Pred file {last_name}{first_name}{jhu_id[:2]}.pt"
+
+                    torch.save({
+                        "state_dict": model.state_dict(),
+                        **params
+                    }, filename)
 
                     msg = EmailMessage()
                     msg["Subject"] = f"{section} File Submission {last_name}{first_name}"
@@ -240,7 +273,6 @@ if st.session_state.get("model_ready"):
                 except Exception as e:
                     st.error(f"❌ Failed to submit model: {str(e)}")
 
-# ---------------------- Download Option ----------------------
 if st.session_state.get("submission_success") and st.session_state.get("allow_download"):
     try:
         with open(st.session_state["model_file"], "rb") as f:
