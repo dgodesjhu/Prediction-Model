@@ -375,3 +375,58 @@ if st.button("Train and Predict"):
                 
         except Exception as e:
             st.error(f"Error during training or evaluation: {str(e)}")
+
+        # --- Model Submission Section ---
+        st.subheader("Submit Your Trained Model")
+
+        with st.form("submit_model_form"):
+            first_name = st.text_input("First Name")
+            last_name = st.text_input("Last (Family) Name")
+            jhu_id = st.text_input("JHU ID (9 digits)")
+
+            download_model = st.checkbox("Download a copy of your model (recommended)", value=True)
+
+            submitted = st.form_submit_button("Submit Model")
+
+            if submitted and first_name and last_name and len(jhu_id) >= 2:
+                import joblib
+                import smtplib
+                from email.message import EmailMessage
+
+                # Create filename and subject
+                file_id = last_name + first_name + jhu_id[:2]
+                model_filename = f"Pred file {file_id}.pkl"
+                email_subject = f"File Submission {last_name}{first_name}"
+
+                # Save model to file
+                joblib.dump(model, model_filename)
+
+                try:
+                    sender_email = "your_email@jhu.edu"  # 🔁 Replace with yours
+                    receiver_email = "your_email@jhu.edu"
+                    email_password = st.secrets["EMAIL_PASSWORD"]  # Set this in Streamlit secrets
+
+                    msg = EmailMessage()
+                    msg["Subject"] = email_subject
+                    msg["From"] = sender_email
+                    msg["To"] = receiver_email
+                    msg.set_content(f"Model submission from {first_name} {last_name}, ID: {jhu_id}")
+
+                    with open(model_filename, "rb") as f:
+                        msg.add_attachment(f.read(), maintype="application", subtype="octet-stream", filename=model_filename)
+
+                    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+                        smtp.login(sender_email, email_password)
+                        smtp.send_message(msg)
+
+                    st.success("✅ Model submitted successfully!")
+
+                    if download_model:
+                        with open(model_filename, "rb") as f:
+                            st.download_button("Download Your Model", f, file_name=model_filename)
+
+                except Exception as e:
+                    st.error(f"❌ Failed to send email: {str(e)}")
+            elif submitted:
+                st.warning("Please fill in all fields before submitting.")
+
