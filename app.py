@@ -19,7 +19,6 @@ from email.message import EmailMessage
 # ---------------------- Config & Setup ----------------------
 st.set_page_config(page_title="Prediction Model", layout="wide")
 
-# ✅ Restore custom styling
 st.markdown("""
     <style>
         html, body, .stApp {
@@ -27,25 +26,21 @@ st.markdown("""
             color: #003366;
             font-family: 'Segoe UI', sans-serif;
         }
-
         .block-container > h1, h2, h3, h4 {
             background-color: #003366;
             color: white !important;
             padding: 0.5em 1em;
             border-radius: 6px;
         }
-
         button[kind="primary"] {
             background-color: #0073e6 !important;
             color: white !important;
             border: none;
             border-radius: 6px;
         }
-
         .stSlider > div > div {
             color: #003366;
         }
-
         .stSelectbox, .stTextInput, .stFileUploader {
             background-color: white;
             border-radius: 6px;
@@ -55,15 +50,65 @@ st.markdown("""
 
 st.title("Prediction Model")
 
-# ---------------------- Load Dataset ----------------------
-@st.cache_data
-def load_data(url):
-    return pd.read_csv(url)
+# ---------------------- Load Dataset or Upload ----------------------
+st.sidebar.header("Choose Dataset")
+data_option = st.sidebar.radio("Data Source", ["Use Provided Dataset", "Upload Your Own Data"])
 
-base_url = "https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing"
-train_df = load_data(f"{base_url}/train.csv")
-valid_df = load_data(f"{base_url}/validation.csv")
-test_df = load_data(f"{base_url}/test.csv")
+if data_option == "Use Provided Dataset":
+    @st.cache_data
+    def load_data(url):
+        return pd.read_csv(url)
+
+    base_url = "https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing"
+    train_df = load_data(f"{base_url}/train.csv")
+    valid_df = load_data(f"{base_url}/validation.csv")
+    test_df = load_data(f"{base_url}/test.csv")
+else:
+    uploaded_train = st.sidebar.file_uploader("Upload Training Data", type="csv")
+    uploaded_valid = st.sidebar.file_uploader("Upload Validation Data", type="csv")
+    uploaded_test = st.sidebar.file_uploader("Upload Test Data (optional)", type="csv")
+
+    if uploaded_train and uploaded_valid:
+        train_df = pd.read_csv(uploaded_train).dropna()
+        valid_df = pd.read_csv(uploaded_valid).dropna()
+        test_df = pd.read_csv(uploaded_test).dropna() if uploaded_test else None
+    else:
+        st.warning("Please upload both training and validation data to proceed.")
+        st.stop()
+
+# ---------------------- Model Selection ----------------------
+st.sidebar.header("Model Settings")
+model_type = st.sidebar.selectbox("Model Type", ["ANN", "Decision Tree", "Random Forest", "Boosted Trees"])
+
+# --- Determine max hidden node count ---
+input_dim = train_df.shape[1] - 1
+
+# --- Common settings ---
+standardize = st.sidebar.checkbox("Standardize Features (ANN only)", value=True)
+
+# --- ANN ---
+if model_type == "ANN":
+    hidden_layers = st.sidebar.slider("Hidden Layers", 1, 5, 2)
+    nodes = st.sidebar.slider("Nodes per Layer", 4, input_dim, min(input_dim, 16))
+    activation = st.sidebar.selectbox("Activation", ["relu", "sigmoid", "tanh"])
+    learning_rate = st.sidebar.slider("Learning Rate", 0.001, 0.01, 0.001, step=0.001, format="%.4f")
+    epochs = st.sidebar.slider("Epochs", 10, 250, 50, step=10)
+
+# --- Tree models ---
+if model_type in ["Decision Tree", "Random Forest"]:
+    criterion = st.sidebar.selectbox("Splitting Criterion", ["gini", "entropy"])
+
+if model_type == "Decision Tree":
+    max_depth = st.sidebar.slider("Max Depth", 1, 20, 5)
+
+if model_type == "Random Forest":
+    n_estimators = st.sidebar.slider("Number of Trees", 10, 200, 100, step=10)
+    max_depth = st.sidebar.slider("Max Depth", 1, 20, 5)
+    max_features = st.sidebar.slider("Max Features", 1, input_dim, min(5, input_dim))
+
+if model_type == "Boosted Trees":
+    n_estimators = st.sidebar.slider("Boosting Rounds", 10, 200, 100, step=10)
+    max_depth = st.sidebar.slider("Max Depth", 1, 20, 3)
 
 # ---------------------- ANN Model Class ----------------------
 class SimpleANN(nn.Module):
@@ -79,34 +124,7 @@ class SimpleANN(nn.Module):
     def forward(self, x):
         return self.net(x)
 
-# ---------------------- Model Training ----------------------
-st.sidebar.header("Model Settings")
-model_type = st.sidebar.selectbox("Model Type", ["ANN", "Decision Tree", "Random Forest", "Boosted Trees"])
-
-# Common settings
-standardize = st.sidebar.checkbox("Standardize Features (ANN only)", value=True)
-
-# Hyperparameters for ANN
-if model_type == "ANN":
-    hidden_layers = st.sidebar.slider("Hidden Layers", 1, 5, 2)
-    nodes = st.sidebar.slider("Nodes per Layer", 4, 64, 16)
-    activation = st.sidebar.selectbox("Activation", ["relu", "sigmoid", "tanh"])
-    learning_rate = st.sidebar.slider("Learning Rate", 0.001, 0.01, 0.001, step=0.001, format="%.4f")
-    epochs = st.sidebar.slider("Epochs", 10, 250, 50, step=10)
-
-# Hyperparameters for Tree-based models
-if model_type == "Decision Tree":
-    max_depth = st.sidebar.slider("Max Depth", 1, 20, 5)
-
-if model_type == "Random Forest":
-    n_estimators = st.sidebar.slider("Number of Trees", 10, 200, 100, step=10)
-    max_depth = st.sidebar.slider("Max Depth", 1, 20, 5)
-    max_features = st.sidebar.slider("Max Features", 1, 10, 5)
-
-if model_type == "Boosted Trees":
-    n_estimators = st.sidebar.slider("Boosting Rounds", 10, 200, 100, step=10)
-    max_depth = st.sidebar.slider("Max Depth", 1, 20, 3)
-
+# ---------------------- Training ----------------------
 if st.button("Train and Predict"):
     try:
         X_train, y_train = train_df.iloc[:, :-1].values, train_df.iloc[:, -1].values
@@ -127,41 +145,49 @@ if st.button("Train and Predict"):
             criterion = nn.BCEWithLogitsLoss()
             optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-            for epoch in range(epochs):
+            train_losses, val_losses = [], []
+            for _ in range(epochs):
                 model.train()
                 optimizer.zero_grad()
                 loss = criterion(model(X_train_t), y_train_t)
                 loss.backward()
                 optimizer.step()
+                train_losses.append(loss.item())
 
-            model.eval()
+                with torch.no_grad():
+                    val_loss = criterion(model(X_val_t), y_val_t).item()
+                    val_losses.append(val_loss)
+
             with torch.no_grad():
                 y_val_probs = torch.sigmoid(model(X_val_t)).numpy().flatten()
                 y_val_pred = (y_val_probs >= 0.5).astype(int)
 
-        elif model_type == "Decision Tree":
-            model = DecisionTreeClassifier(max_depth=max_depth)
-            model.fit(X_train, y_train)
-            y_val_probs = model.predict_proba(X_val)[:, 1]
-            y_val_pred = model.predict(X_val)
+            fig, ax = plt.subplots()
+            ax.plot(train_losses, label="Train Loss")
+            ax.plot(val_losses, label="Validation Loss")
+            ax.legend()
+            ax.set_title("Loss Curve")
+            st.pyplot(fig)
 
-        elif model_type == "Random Forest":
-            model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features)
-            model.fit(X_train, y_train)
-            y_val_probs = model.predict_proba(X_val)[:, 1]
-            y_val_pred = model.predict(X_val)
+        else:
+            if model_type == "Decision Tree":
+                model = DecisionTreeClassifier(criterion=criterion, max_depth=max_depth)
+            elif model_type == "Random Forest":
+                model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, max_features=max_features, criterion=criterion)
+            elif model_type == "Boosted Trees":
+                model = GradientBoostingClassifier(n_estimators=n_estimators, max_depth=max_depth)
 
-        elif model_type == "Boosted Trees":
-            model = GradientBoostingClassifier(n_estimators=n_estimators, max_depth=max_depth)
             model.fit(X_train, y_train)
             y_val_probs = model.predict_proba(X_val)[:, 1]
             y_val_pred = model.predict(X_val)
 
         st.subheader("Validation Metrics")
+        cm = confusion_matrix(y_val, y_val_pred)
+        specificity = cm[0,0] / cm[0].sum() if cm[0].sum() else 0
         st.write({
             "Precision": round(precision_score(y_val, y_val_pred), 3),
             "Recall": round(recall_score(y_val, y_val_pred), 3),
-            "Specificity": round(confusion_matrix(y_val, y_val_pred)[0, 0] / sum(confusion_matrix(y_val, y_val_pred)[0]), 3),
+            "Specificity": round(specificity, 3),
             "AUC": round(roc_auc_score(y_val, y_val_probs), 3),
             "F1": round(f1_score(y_val, y_val_pred), 3)
         })
@@ -175,7 +201,6 @@ if st.button("Train and Predict"):
 # ---------------------- Submission Form ----------------------
 if st.session_state.get("model_ready"):
     st.subheader("Submit Your Trained Model")
-
     with st.form("submit_model_form"):
         first_name = st.text_input("First Name")
         last_name = st.text_input("Last Name")
@@ -185,15 +210,9 @@ if st.session_state.get("model_ready"):
         submitted = st.form_submit_button("Submit Model")
 
         if submitted:
-            st.write(f"First: {first_name}, Last: {last_name}, ID: {jhu_id}, Section: {section}")
-            if (
-                not first_name.strip() or
-                not last_name.strip() or
-                not jhu_id.strip().isdigit() or
-                len(jhu_id.strip()) < 2 or
-                section == "Select One"
-            ):
-                st.warning("Please complete all fields correctly before submitting.")            
+            if (not first_name.strip() or not last_name.strip() or not jhu_id.strip().isdigit()
+                or len(jhu_id.strip()) < 2 or section == "Select One"):
+                st.warning("Please complete all fields correctly before submitting.")
             else:
                 try:
                     model = st.session_state["trained_model"]
