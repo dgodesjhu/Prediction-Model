@@ -399,9 +399,6 @@ if st.button("Train and Predict"):
                             sender_email = "davegodes1@gmail.com"
                             receiver_email = "dgodes@jhu.edu"
                             email_password = st.secrets["EMAIL_PASSWORD"]
-
-                            sender_email = "your_verified_gmail@gmail.com"
-                            email_password = st.secrets["EMAIL_PASSWORD"]
                             smtp_server = "smtp.gmail.com"
                             smtp_port = 465
                             
@@ -434,8 +431,10 @@ if st.button("Train and Predict"):
         except Exception as e:
             st.error(f"Error during training or evaluation: {str(e)}")
 
-    # --- Show Download Button if Requested ---
-        if st.session_state.get("submission_success") and st.session_state.get("download_requested"):
-            with open(st.session_state["download_model_path"], "rb") as f:
-                st.download_button("Download Your Model", f, file_name=st.session_state["download_model_path"])
-
+# --- Show Download Button if Requested ---
+if st.session_state.get("submission_success") and st.session_state.get("download_requested"):
+    try:
+        with open(st.session_state["download_model_path"], "rb") as f:
+            st.download_button("Download Your Model", f, file_name=st.session_state["download_model_path"])
+    except Exception as e:
+        st.error(f"❌ Could not prepare model for download: {str(e)}")
