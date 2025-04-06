@@ -76,6 +76,8 @@ data_option = st.sidebar.radio(
 example_dataset = None
 if data_option == "Use Provided Dataset":
     
+    example_dataset = st.session_state.get("example_dataset", None)
+    
     # Clear previously uploaded files to avoid contamination
     st.session_state.pop("train_file", None)
     st.session_state.pop("valid_file", None)
@@ -85,7 +87,9 @@ if data_option == "Use Provided Dataset":
         "Choose dataset:",
         ["Bank Marketing", "Customer Retention/Churn"]
     )
-
+    
+    st.session_state["example_dataset"] = example_dataset  # <== add this line
+    
 # Function to load data from a URL
 @st.cache_data
 def load_data(url):
