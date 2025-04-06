@@ -276,6 +276,7 @@ if st.button("Train and Predict"):
             test_file.seek(0)
             test_df = pd.read_csv(test_file).apply(pd.to_numeric, errors='coerce').dropna()
 
+    st.write("train_df:", type(train_df), "valid_df:", type(valid_df))
     if train_df is None or valid_df is None:
         st.error("Training and validation data must be available.")
     else:
