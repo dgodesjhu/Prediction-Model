@@ -75,6 +75,12 @@ data_option = st.sidebar.radio(
 
 example_dataset = None
 if data_option == "Use Provided Dataset":
+    
+    # Clear previously uploaded files to avoid contamination
+    st.session_state.pop("train_file", None)
+    st.session_state.pop("valid_file", None)
+    st.session_state.pop("test_file", None)
+    
     example_dataset = st.sidebar.selectbox(
         "Choose dataset:",
         ["Bank Marketing", "Customer Retention/Churn"]
@@ -127,6 +133,10 @@ if example_dataset == "Customer Retention/Churn":
             
 # --- Upload option fallback ---
 else:
+    st.session_state.pop("train_df", None)
+    st.session_state.pop("valid_df", None)
+    st.session_state.pop("test_df", None)
+    
     uploaded_train = st.sidebar.file_uploader("Training CSV (with labels)", type="csv", key="train")
     uploaded_valid = st.sidebar.file_uploader("Validation CSV (with labels)", type="csv", key="valid")
     uploaded_test = st.sidebar.file_uploader("Test CSV (no labels)", type="csv", help="Optional", key="test")
