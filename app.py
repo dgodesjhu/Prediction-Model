@@ -24,6 +24,16 @@ def set_seed(seed=42):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+@st.cache_data
+def load_data(url):
+    try:
+        data = pd.read_csv(url)
+#        st.success(f"Successfully loaded data from {url}")
+        return data
+    except Exception as e:
+#        st.error(f"Failed to load data from {url}. Error: {e}")
+        return None
+
 warnings.filterwarnings("ignore")
 
 st.set_page_config(page_title="Prediction Model", layout="wide")
@@ -83,12 +93,8 @@ if data_option == "Use Provided Dataset":
     st.session_state.pop("train_file", None)
     st.session_state.pop("valid_file", None)
     st.session_state.pop("test_file", None)
-else:
-    st.session_state.pop("train_df", None)
-    st.session_state.pop("valid_df", None)
-    st.session_state.pop("test_df", None)
-
-if data_option == "Use Provided Dataset"
+    
+if data_option == "Use Provided Dataset":
     # Function to load data from a URL
     @st.cache_data
     def load_data(url):
