@@ -430,23 +430,23 @@ if st.button("Train and Predict"):
  #               st.subheader("Predictions on Test Set")
  #               st.json(preds.tolist())
 
-            if test_df is not None:
-                try:
-                    X_test = test_df.values
-                    if model_type == "ANN":
-                        if standardize:
-                            if X_test.shape[1] != X_train.shape[1]:
-                                raise ValueError("Mismatch in feature dimensions between training and test data.")
-                            X_test = scaler.transform(X_test)
-                        X_test_t = torch.tensor(X_test, dtype=torch.float32)
-                        with torch.no_grad():
-                            preds = torch.sigmoid(model(X_test_t)).numpy().flatten()
-                    else:
-                        preds = model.predict_proba(X_test)[:, 1]
-                    st.subheader("Predictions on Test Set")
-                    st.json(preds.tolist())
-                except Exception as e:
-                    st.error(f"Error generating predictions on test set: {str(e)}")
+ #           if test_df is not None:
+ #               try:
+ #                   X_test = test_df.values
+ #                   if model_type == "ANN":
+ #                       if standardize:
+ #                           if X_test.shape[1] != X_train.shape[1]:
+ #                               raise ValueError("Mismatch in feature dimensions between training and test data.")
+ #                           X_test = scaler.transform(X_test)
+ #                       X_test_t = torch.tensor(X_test, dtype=torch.float32)
+ #                       with torch.no_grad():
+ #                           preds = torch.sigmoid(model(X_test_t)).numpy().flatten()
+ #                   else:
+ #                       preds = model.predict_proba(X_test)[:, 1]
+ #                   st.subheader("Predictions on Test Set")
+ #                   st.json(preds.tolist())
+ #               except Exception as e:
+ #                   st.error(f"Error generating predictions on test set: {str(e)}")
                     
 # ---------------------- Submission Form ----------------------
 if st.session_state.get("model_ready"):
