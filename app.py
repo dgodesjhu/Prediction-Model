@@ -83,6 +83,22 @@ data_option = st.sidebar.radio(
     ["Use Provided Dataset", "Upload Your Own Data"]
 )
 
+# --- Clear session state if data source was changed ---
+if "last_data_option" not in st.session_state:
+    st.session_state["last_data_option"] = data_option
+
+if st.session_state["last_data_option"] != data_option:
+    # Clear everything related to dataset/model state
+    for key in [
+        "train_df", "valid_df", "test_df",
+        "train_file", "valid_file", "test_file",
+        "train_df_cached", "trained_model", "model_params",
+        "model_ready", "submission_success", "model_file", "allow_download"
+    ]:
+        st.session_state.pop(key, None)
+
+    st.session_state["last_data_option"] = data_option
+
 example_dataset = st.sidebar.selectbox(
         "Choose dataset:",
         ["Bank Marketing", "Customer Retention/Churn"]
@@ -281,7 +297,7 @@ if st.button("Train and Predict"):
             test_file.seek(0)
             test_df = pd.read_csv(test_file).apply(pd.to_numeric, errors='coerce').dropna()
 
-    st.write("train_df:", type(train_df), "valid_df:", type(valid_df))
+#    st.write("train_df:", type(train_df), "valid_df:", type(valid_df))
     if train_df is None or valid_df is None:
         st.error("Training and validation data must be available.")
     else:
