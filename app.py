@@ -426,18 +426,18 @@ if st.button("Train and Predict"):
                     "standardize": standardize
                 }
 
-            if test_df is not None:
-                X_test = test_df.values
-                if model_type == "ANN":
-                    if standardize:
-                        X_test = scaler.transform(X_test)
-                    X_test_t = torch.tensor(X_test, dtype=torch.float32)
-                    with torch.no_grad():
-                        preds = torch.sigmoid(model(X_test_t)).numpy().flatten()
-                else:
-                    preds = model.predict_proba(X_test)[:, 1]
-                st.subheader("Predictions on Test Set")
-                st.json(preds.tolist())
+ #           if test_df is not None:
+ #               X_test = test_df.values
+ #               if model_type == "ANN":
+ #                   if standardize:
+ #                       X_test = scaler.transform(X_test)
+ #                   X_test_t = torch.tensor(X_test, dtype=torch.float32)
+ #                   with torch.no_grad():
+ #                       preds = torch.sigmoid(model(X_test_t)).numpy().flatten()
+ #               else:
+ #                   preds = model.predict_proba(X_test)[:, 1]
+ #               st.subheader("Predictions on Test Set")
+ #               st.json(preds.tolist())
                 
         except Exception as e:
             st.error(f"Error during training or evaluation: {str(e)}")
