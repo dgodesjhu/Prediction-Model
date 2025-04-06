@@ -13,6 +13,8 @@ import seaborn as sns
 import warnings
 import io
 import random
+import smtplib
+from email.message import EmailMessage
 
 def set_seed(seed=42):
     random.seed(seed)
