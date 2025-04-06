@@ -112,8 +112,7 @@ if data_option == "Use Provided Dataset":
     
 if data_option == "Use Provided Dataset":
     # Function to load data from a URL
-    @st.cache_data
-
+   
     if example_dataset == "Bank Marketing":
         base_url = "https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing"
         train_url = f"{base_url}/train.csv"
