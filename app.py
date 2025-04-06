@@ -445,8 +445,8 @@ if st.button("Train and Predict"):
  #                       preds = model.predict_proba(X_test)[:, 1]
  #                   st.subheader("Predictions on Test Set")
  #                   st.json(preds.tolist())
- #               except Exception as e:
- #                   st.error(f"Error generating predictions on test set: {str(e)}")
+        except Exception as e:
+            st.error(f"Error generating predictions on test set: {str(e)}")
                     
 # ---------------------- Submission Form ----------------------
 if st.session_state.get("model_ready"):
