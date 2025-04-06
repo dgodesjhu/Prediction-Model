@@ -73,33 +73,32 @@ data_option = st.sidebar.radio(
     ["Use Provided Dataset", "Upload Your Own Data"]
 )
 
-example_dataset = None
+example_dataset = st.sidebar.selectbox(
+        "Choose dataset:",
+        ["Bank Marketing", "Customer Retention/Churn"]
+    ) if data_option == "Use Provided Dataset" else None    
+
+# --- Reset old state to avoid mixing files ---
 if data_option == "Use Provided Dataset":
-    
-    example_dataset = st.session_state.get("example_dataset", None)
-    
-    # Clear previously uploaded files to avoid contamination
     st.session_state.pop("train_file", None)
     st.session_state.pop("valid_file", None)
     st.session_state.pop("test_file", None)
-    
-    example_dataset = st.sidebar.selectbox(
-        "Choose dataset:",
-        ["Bank Marketing", "Customer Retention/Churn"]
-    )
-    
-    st.session_state["example_dataset"] = example_dataset  # <== add this line
-    
-# Function to load data from a URL
-@st.cache_data
-def load_data(url):
-    try:
-        data = pd.read_csv(url)
-#        st.success(f"Successfully loaded data from {url}")
-        return data
-    except Exception as e:
-#        st.error(f"Failed to load data from {url}. Error: {e}")
-        return None
+else:
+    st.session_state.pop("train_df", None)
+    st.session_state.pop("valid_df", None)
+    st.session_state.pop("test_df", None)
+
+if data_option == "Use Provided Dataset"
+    # Function to load data from a URL
+    @st.cache_data
+    def load_data(url):
+        try:
+            data = pd.read_csv(url)
+    #        st.success(f"Successfully loaded data from {url}")
+            return data
+        except Exception as e:
+    #        st.error(f"Failed to load data from {url}. Error: {e}")
+            return None
 
 if example_dataset == "Bank Marketing":
     base_url = "https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing"
