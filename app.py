@@ -247,7 +247,7 @@ if st.button("Train and Predict"):
     valid_df = None
     test_df = None
 
-    if data_option == "Use Provided Dataset" and example_dataset == "Bank Marketing":
+    if data_option == "Use Provided Dataset":
         train_df = st.session_state.get("train_df", None)
         valid_df = st.session_state.get("valid_df", None)
         test_df = st.session_state.get("test_df", None)
