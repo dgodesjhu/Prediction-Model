@@ -375,3 +375,57 @@ if st.button("Train and Predict"):
                 
         except Exception as e:
             st.error(f"Error during training or evaluation: {str(e)}")
+
+# ---------------------- Submission Form ----------------------
+if st.session_state.get("model_ready"):
+    st.subheader("Submit Your Trained Model")
+    with st.form("submit_model_form"):
+        first_name = st.text_input("First Name")
+        last_name = st.text_input("Last Name")
+        jhu_id = st.text_input("JHU ID (9 digits)")
+        section = st.selectbox("Section", ["Select One", "DC", "HE"])
+        download_model = st.checkbox("Download a copy of your model", value=True)
+        submitted = st.form_submit_button("Submit Model")
+
+        if submitted:
+            if (not first_name.strip() or not last_name.strip() or not jhu_id.strip().isdigit()
+                or len(jhu_id.strip()) < 2 or section == "Select One"):
+                st.warning("Please complete all fields correctly before submitting.")
+            else:
+                try:
+                    model = st.session_state["trained_model"]
+                    params = st.session_state["model_params"]
+                    filename = f"Pred file {last_name}{first_name}{jhu_id[:2]}.pt"
+
+                    torch.save({
+                        "state_dict": model.state_dict(),
+                        **params
+                    }, filename)
+
+                    msg = EmailMessage()
+                    msg["Subject"] = f"{section} File Submission {last_name}{first_name}"
+                    msg["From"] = "davegodes1@gmail.com"
+                    msg["To"] = "dgodes@jhu.edu"
+                    msg.set_content(f"Submission from {first_name} {last_name}, ID: {jhu_id}")
+
+                    with open(filename, "rb") as f:
+                        msg.add_attachment(f.read(), maintype="application", subtype="octet-stream", filename=filename)
+
+                    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+                        smtp.login("davegodes1@gmail.com", st.secrets["EMAIL_PASSWORD"])
+                        smtp.send_message(msg)
+
+                    st.session_state["submission_success"] = True
+                    st.session_state["model_file"] = filename
+                    st.session_state["allow_download"] = download_model
+                    st.success("✅ Model submitted successfully!")
+
+                except Exception as e:
+                    st.error(f"❌ Failed to submit model: {str(e)}")
+
+if st.session_state.get("submission_success") and st.session_state.get("allow_download"):
+    try:
+        with open(st.session_state["model_file"], "rb") as f:
+            st.download_button("Download Your Model", f, file_name=st.session_state["model_file"])
+    except Exception as e:
+        st.error(f"Could not prepare model for download: {str(e)}")
