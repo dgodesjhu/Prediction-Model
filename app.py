@@ -113,14 +113,6 @@ if data_option == "Use Provided Dataset":
 if data_option == "Use Provided Dataset":
     # Function to load data from a URL
     @st.cache_data
-    def load_data(url):
-        try:
-            data = pd.read_csv(url)
-    #        st.success(f"Successfully loaded data from {url}")
-            return data
-        except Exception as e:
-    #        st.error(f"Failed to load data from {url}. Error: {e}")
-            return None
 
     if example_dataset == "Bank Marketing":
         base_url = "https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing"
