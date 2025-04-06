@@ -362,6 +362,18 @@ if st.button("Train and Predict"):
                 "F1 Score": round(f1, 3)
             })
 
+        st.session_state["trained_model"] = model
+        st.session_state["model_ready"] = True
+            
+        if model_type == "ANN":
+            st.session_state["model_params"] = {
+                "input_dim": X_train.shape[1],
+                "hidden_layers": hidden_layers,
+                "nodes": nodes_per_layer,
+                "activation": activation,
+                "standardize": standardize
+            }
+
             if test_df is not None:
                 X_test = test_df.values
                 if model_type == "ANN":
