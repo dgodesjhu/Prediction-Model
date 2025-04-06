@@ -116,6 +116,7 @@ if example_dataset == "Customer Retention/Churn":
     
     train_df = load_data(train_url)
     valid_df = load_data(valid_url)
+    test_df = None
     
     if train_df is not None and valid_df is not None:
         st.session_state["train_df"] = train_df
