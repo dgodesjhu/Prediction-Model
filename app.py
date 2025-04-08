@@ -454,13 +454,13 @@ if st.session_state.get("model_ready"):
     with st.form("submit_model_form"):
         first_name = st.text_input("First Name")
         last_name = st.text_input("Last Name")
-        jhu_id = st.text_input("JHU ID (9 digits)")
+        jhu_id = st.text_input("JHU SIS ID (6 digits)")
         section = st.selectbox("Section", ["Select One", "DC", "HE"])
         download_model = st.checkbox("Download a copy of your model", value=True)
         submitted = st.form_submit_button("Submit Model")
 
         if submitted:
-            if (not first_name.strip() or not last_name.strip() or not jhu_id.strip().isdigit()
+            if (not first_name.strip() or not last_name.strip()
                 or len(jhu_id.strip()) < 2 or section == "Select One"):
                 st.warning("Please complete all fields correctly before submitting.")
             else:
