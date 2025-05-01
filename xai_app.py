@@ -9,6 +9,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 from lime.lime_tabular import LimeTabularExplainer
 import shap
+import matplotlib.pyplot as plt
+
 
 # Load dataset
 def load_data():
@@ -86,9 +88,10 @@ def main():
         st.subheader("SHAP Explanation")
         if model_choice == 'Random Forest':
             shap_explainer = shap.TreeExplainer(model)
-            shap_values = shap_explainer.shap_values(instance)
-            fig, ax = shap.summary_plot(shap_values, features=instance, feature_names=X.columns, plot_type='bar', show=False)
-            st.pyplot(fig)
+            shap_values = shap_explainer.shap_values(X_test)
+            import matplotlib.pyplot as plt
+            shap.summary_plot(shap_values, features=X_test, feature_names=X.columns, plot_type='bar', show=False)
+            st.pyplot(plt.gcf())
         else:
             st.write("SHAP for neural networks requires a specialized setup and may be added in a future version.")
 
