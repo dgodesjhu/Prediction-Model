@@ -10,7 +10,6 @@ from sklearn.preprocessing import StandardScaler
 from lime.lime_tabular import LimeTabularExplainer
 import shap
 import matplotlib.pyplot as plt
-import streamlit.components.v1 as components
 
 # Load dataset
 def load_data():
@@ -64,9 +63,12 @@ def main():
 
     model_choice = st.sidebar.selectbox('Choose Model', ['Random Forest', 'Neural Network'])
     explainer_choice = st.sidebar.selectbox('Choose Explanation Method', ['LIME', 'SHAP'])
-    explanation_level = st.sidebar.selectbox('Explanation Level', ['Instance', 'Global'])
-    idx = st.sidebar.number_input('Test instance index:', min_value=0, max_value=X_test.shape[0]-1, value=0)
-    instance = X_test[idx].reshape(1, -1)
+
+    # Only show instance index for LIME
+    idx = 0
+    if explainer_choice == 'LIME':
+        idx = st.sidebar.number_input('Test instance index:', min_value=0, max_value=X_test.shape[0]-1, value=0)
+        instance = X_test[idx].reshape(1, -1)
 
     if model_choice == 'Random Forest':
         model = RandomForestClassifier(n_estimators=100, random_state=42)
@@ -79,39 +81,5 @@ def main():
                 return model(torch.FloatTensor(data)).numpy()
 
     if explainer_choice == 'LIME':
-        st.subheader("LIME Explanation")
-        lime_explainer = LimeTabularExplainer(X_train, feature_names=X.columns, class_names=['Stay', 'Churn'], discretize_continuous=True)
-        explanation = lime_explainer.explain_instance(instance[0], predict_fn)
-        fig = explanation.as_pyplot_figure()
-        st.pyplot(fig)
-
-    elif explainer_choice == 'SHAP':
-        st.subheader("SHAP Explanation")
-        if model_choice == 'Random Forest':
-            shap_explainer = shap.TreeExplainer(model)
-            shap_values = shap_explainer.shap_values(X_test)
-
-            if explanation_level == 'Global':
-                shap.summary_plot(shap_values, features=X_test, feature_names=X.columns, plot_type='bar', show=False)
-                st.pyplot(plt.gcf())
-
-            else:  # Instance-level
-                force_plot = shap.force_plot(
-                    shap_explainer.expected_value[1],  # for class 1 (Churn)
-                    shap_values[1][idx, :],  # SHAP values for selected instance
-                    X_test[idx+1, :],  # feature values for selected instance
-                    feature_names=X.columns,
-                    matplotlib=False
-                )
-                components.html(shap.getjs() + force_plot.html(), height=300)
-
-        else:
-            st.write("SHAP for neural networks requires a specialized setup and may be added in a future version.")
-
-    st.subheader("Prediction")
-    pred_proba = predict_fn(instance)[0]
-    st.write(f"Probability of Staying: {pred_proba[0]:.2f}")
-    st.write(f"Probability of Churn: {pred_proba[1]:.2f}")
-
-if __name__ == "__main__":
-    main()
+        st.subheader("LIME Explanation (Instance Level)")
+        lime_explainer = LimeTabularExplainer(X_train, feature_names=X.columns_
