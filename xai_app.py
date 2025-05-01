@@ -12,7 +12,7 @@ import shap
 
 # Load dataset
 def load_data():
-    train_url="https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/bank_marketing/train.csv"
+    train_url="https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/retentionchurn/train.csv"
     df = pd.read_csv(train_url)
     df = pd.get_dummies(df, drop_first=True)
     return df
@@ -53,8 +53,8 @@ def main():
     st.title("Explainable AI: Churn Prediction Demo")
 
     df = load_data()
-    X = df.drop('Exited', axis=1)
-    y = df['Exited']
+    X = df.drop('Retained.in.2012.', axis=1)
+    y = df['Retained.in.2012.']
 
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
