@@ -7,3 +7,4 @@ matplotlib
 seaborn
 lime
 shap
+streamlit-shap
