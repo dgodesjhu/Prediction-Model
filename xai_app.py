@@ -99,7 +99,7 @@ def main():
                 force_plot = shap.force_plot(
                     shap_explainer.expected_value[1],  # for class 1 (Churn)
                     shap_values[1][idx, :],  # SHAP values for selected instance
-                    X_test[idx, :],  # feature values for selected instance
+                    X_test[idx+1, :],  # feature values for selected instance
                     feature_names=X.columns,
                     matplotlib=False
                 )
