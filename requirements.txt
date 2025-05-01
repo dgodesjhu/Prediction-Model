@@ -5,3 +5,5 @@ numpy>=1.24
 scikit-learn
 matplotlib
 seaborn
+lime
+shap
