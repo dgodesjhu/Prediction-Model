@@ -10,11 +10,11 @@ from sklearn.preprocessing import StandardScaler
 from lime.lime_tabular import LimeTabularExplainer
 import shap
 import matplotlib.pyplot as plt
-
+import streamlit.components.v1 as components
 
 # Load dataset
 def load_data():
-    train_url="https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/retentionchurn/train.csv"
+    train_url = "https://raw.githubusercontent.com/dgodesjhu/Prediction-Model/main/data/retentionchurn/train.csv"
     df = pd.read_csv(train_url)
     df = pd.get_dummies(df, drop_first=True)
     return df
@@ -64,6 +64,7 @@ def main():
 
     model_choice = st.sidebar.selectbox('Choose Model', ['Random Forest', 'Neural Network'])
     explainer_choice = st.sidebar.selectbox('Choose Explanation Method', ['LIME', 'SHAP'])
+    explanation_level = st.sidebar.selectbox('Explanation Level', ['Instance', 'Global'])
     idx = st.sidebar.number_input('Test instance index:', min_value=0, max_value=X_test.shape[0]-1, value=0)
     instance = X_test[idx].reshape(1, -1)
 
@@ -89,9 +90,21 @@ def main():
         if model_choice == 'Random Forest':
             shap_explainer = shap.TreeExplainer(model)
             shap_values = shap_explainer.shap_values(X_test)
-            import matplotlib.pyplot as plt
-            shap.summary_plot(shap_values, features=X, feature_names=X.columns, plot_type='bar', show=False)
-            st.pyplot(plt.gcf())
+
+            if explanation_level == 'Global':
+                shap.summary_plot(shap_values, features=X_test, feature_names=X.columns, plot_type='bar', show=False)
+                st.pyplot(plt.gcf())
+
+            else:  # Instance-level
+                force_plot = shap.force_plot(
+                    shap_explainer.expected_value[1],  # for class 1 (Churn)
+                    shap_values[1][idx, :],  # SHAP values for selected instance
+                    X_test[idx, :],  # feature values for selected instance
+                    feature_names=X.columns,
+                    matplotlib=False
+                )
+                components.html(shap.getjs() + force_plot.html(), height=300)
+
         else:
             st.write("SHAP for neural networks requires a specialized setup and may be added in a future version.")
 
