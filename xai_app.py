@@ -90,7 +90,7 @@ def main():
             shap_explainer = shap.TreeExplainer(model)
             shap_values = shap_explainer.shap_values(X_test)
             import matplotlib.pyplot as plt
-            shap.summary_plot(shap_values, features=X_test, feature_names=X.columns, plot_type='bar', show=False)
+            shap.summary_plot(shap_values, features=X, feature_names=X.columns, plot_type='bar', show=False)
             st.pyplot(plt.gcf())
         else:
             st.write("SHAP for neural networks requires a specialized setup and may be added in a future version.")
