@@ -82,4 +82,25 @@ def main():
 
     if explainer_choice == 'LIME':
         st.subheader("LIME Explanation (Instance Level)")
-        lime_explainer = LimeTabularExplainer(X_train, feature_names=X.columns_
+        lime_explainer = LimeTabularExplainer(X_train, feature_names=X.columns, class_names=['Stay', 'Churn'], discretize_continuous=True)
+        explanation = lime_explainer.explain_instance(instance[0], predict_fn)
+        fig = explanation.as_pyplot_figure()
+        st.pyplot(fig)
+
+        st.subheader("Prediction for Selected Instance")
+        pred_proba = predict_fn(instance)[0]
+        st.write(f"Probability of Staying: {pred_proba[0]:.2f}")
+        st.write(f"Probability of Churn: {pred_proba[1]:.2f}")
+
+    elif explainer_choice == 'SHAP':
+        st.subheader("SHAP Explanation (Global Feature Importance)")
+        if model_choice == 'Random Forest':
+            shap_explainer = shap.TreeExplainer(model)
+            shap_values = shap_explainer.shap_values(X_test)
+            shap.summary_plot(shap_values, features=X_test, feature_names=X.columns, plot_type='bar', show=False)
+            st.pyplot(plt.gcf())
+        else:
+            st.write("SHAP for neural networks requires a specialized setup and may be added in a future version.")
+
+if __name__ == "__main__":
+    main()
