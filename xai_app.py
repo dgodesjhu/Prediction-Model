@@ -103,15 +103,13 @@ def main():
             X_test_df = pd.DataFrame(X_test, columns=X.columns)
             
             if isinstance(shap_values, list):
-                # Combine class outputs: (n_classes, n_samples, n_features)
-                sv_stack = np.stack(shap_values, axis=0)
-                # Average over samples and classes → (n_features,)
-                mean_abs_shap = np.abs(sv_stack).mean(axis=(0, 1))
+                # Compute mean over classes first → (n_samples, n_features)
+                sv_mean_per_class = np.mean([np.abs(sv) for sv in shap_values], axis=0)
+                # Then average over samples → (n_features,)
+                mean_abs_shap = sv_mean_per_class.mean(axis=0)
             else:
+                # Binary or regression → (n_samples, n_features)
                 mean_abs_shap = np.abs(shap_values).mean(axis=0)
-    
-            # Ensure 1D shape
-            mean_abs_shap = mean_abs_shap.flatten()
     
             st.write("mean_abs_shap shape:", mean_abs_shap.shape)
             st.write("X.columns length:", len(X.columns))
