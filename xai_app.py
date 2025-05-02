@@ -102,33 +102,24 @@ def main():
             shap_values = shap_explainer.shap_values(X_test)
             X_test_df = pd.DataFrame(X_test, columns=X.columns)
             
-            # Handle multiclass vs binary case
             if isinstance(shap_values, list):
-                sv = shap_values[1]  # focus on class 1 (churn)
+                # Combine class outputs: (n_classes, n_samples, n_features)
+                sv_stack = np.stack(shap_values, axis=0)
+                # Average over samples and classes → (n_features,)
+                mean_abs_shap = np.abs(sv_stack).mean(axis=(0, 1))
             else:
-                sv = shap_values
-    
-            # Handle different SHAP output shapes
-            if sv.ndim == 3:
-                mean_abs_shap = np.abs(sv).mean(axis=(0, 1))
-            elif sv.ndim == 2:
-                mean_abs_shap = np.abs(sv).mean(axis=0)
-            else:
-                st.error(f"Unexpected SHAP array shape: {sv.shape}")
-                return
+                # Binary or regression → (n_samples, n_features)
+                mean_abs_shap = np.abs(shap_values).mean(axis=0)
     
             st.write("mean_abs_shap shape:", mean_abs_shap.shape)
             st.write("X.columns length:", len(X.columns))
             
-            # Check length match
             if mean_abs_shap.shape[0] != len(X.columns):
                 st.error("Shape mismatch between SHAP values and features! Cannot plot.")
             else:
-                # Build DataFrame for plotting
                 shap_df = pd.DataFrame({'feature': X.columns, 'mean_abs_shap': mean_abs_shap})
                 shap_df = shap_df.sort_values(by='mean_abs_shap', ascending=True)
     
-                # Plot horizontal bar chart
                 plt.figure(figsize=(8, 6))
                 plt.barh(shap_df['feature'], shap_df['mean_abs_shap'])
                 plt.xlabel('Mean Absolute SHAP Value')
