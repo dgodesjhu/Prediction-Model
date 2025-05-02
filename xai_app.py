@@ -100,11 +100,16 @@ def main():
         if model_choice == 'Random Forest':
             shap_explainer = shap.TreeExplainer(model)
             shap_values = shap_explainer.shap_values(X_test)
-            X_test_df = pd.DataFrame(X_test, columns=X.columns)  # <-- PATCH: wrap X_test as DataFrame
-            shap.summary_plot(shap_values[1], features=X_test_df, feature_names=X.columns, plot_type='bar', show=False)
+            X_test_df = pd.DataFrame(X_test, columns=X.columns)
+            
+            # Check if shap_values is a list or array
+            if isinstance(shap_values, list):
+                sv = shap_values[1]  # use class 1 (churn)
+            else:
+                sv = shap_values
+    
+            shap.summary_plot(sv, features=X_test_df, feature_names=X.columns, plot_type='bar', show=False)
             st.pyplot(plt.gcf())
-        else:
-            st.write("SHAP for neural networks requires a specialized setup and may be added in a future version.")
 
 if __name__ == "__main__":
     main()
