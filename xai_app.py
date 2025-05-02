@@ -108,7 +108,7 @@ def main():
             else:
                 sv = shap_values
     
-            mean_abs_shap = np.abs(sv).mean(axis=0)
+            mean_abs_shap = np.abs(sv).mean(axis=0).flatten()
             shap_df = pd.DataFrame({'feature': X.columns, 'mean_abs_shap': mean_abs_shap})
             shap_df = shap_df.sort_values(by='mean_abs_shap', ascending=True)
             
