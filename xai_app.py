@@ -10,6 +10,9 @@ from sklearn.preprocessing import StandardScaler
 from lime.lime_tabular import LimeTabularExplainer
 import shap
 import matplotlib.pyplot as plt
+import os
+
+os.environ["STREAMLIT_WATCHER_TYPE"] = "none"
 
 # Load dataset
 def load_data():
