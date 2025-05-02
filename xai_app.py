@@ -108,7 +108,14 @@ def main():
             else:
                 sv = shap_values
     
-            shap.summary_plot(sv, features=X_test_df, feature_names=X.columns, plot_type='bar', show=False)
+            mean_abs_shap = np.abs(sv).mean(axis=0)
+            shap_df = pd.DataFrame({'feature': X.columns, 'mean_abs_shap': mean_abs_shap})
+            shap_df = shap_df.sort_values(by='mean_abs_shap', ascending=True)
+            
+            plt.figure(figsize=(8, 6))
+            plt.barh(shap_df['feature'], shap_df['mean_abs_shap'])
+            plt.xlabel('Mean Absolute SHAP Value')
+            plt.title('Feature Importance (SHAP)')
             st.pyplot(plt.gcf())
 
 if __name__ == "__main__":
