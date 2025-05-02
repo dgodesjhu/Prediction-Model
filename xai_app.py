@@ -114,7 +114,10 @@ def main():
             # Flatten if needed (handles multiclass fallback)
             if mean_abs_shap.ndim > 1:
                 mean_abs_shap = mean_abs_shap.mean(axis=0)
-    
+
+            st.write("mean_abs_shap shape:", mean_abs_shap.shape)
+            st.write("X.columns length:", len(X.columns))
+            
             # Check length match
             if mean_abs_shap.shape[0] != len(X.columns):
                 st.error("Shape mismatch between SHAP values and features! Cannot plot.")
