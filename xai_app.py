@@ -108,13 +108,15 @@ def main():
             else:
                 sv = shap_values
     
-            # Compute mean absolute SHAP values
-            mean_abs_shap = np.abs(sv).mean(axis=0)
-            
-            # Flatten if needed (handles multiclass fallback)
-            if mean_abs_shap.ndim > 1:
-                mean_abs_shap = mean_abs_shap.mean(axis=0)
-
+            # Handle different SHAP output shapes
+            if sv.ndim == 3:
+                mean_abs_shap = np.abs(sv).mean(axis=(0, 1))
+            elif sv.ndim == 2:
+                mean_abs_shap = np.abs(sv).mean(axis=0)
+            else:
+                st.error(f"Unexpected SHAP array shape: {sv.shape}")
+                return
+    
             st.write("mean_abs_shap shape:", mean_abs_shap.shape)
             st.write("X.columns length:", len(X.columns))
             
