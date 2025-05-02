@@ -108,8 +108,10 @@ def main():
                 # Average over samples and classes → (n_features,)
                 mean_abs_shap = np.abs(sv_stack).mean(axis=(0, 1))
             else:
-                # Binary or regression → (n_samples, n_features)
                 mean_abs_shap = np.abs(shap_values).mean(axis=0)
+    
+            # Ensure 1D shape
+            mean_abs_shap = mean_abs_shap.flatten()
     
             st.write("mean_abs_shap shape:", mean_abs_shap.shape)
             st.write("X.columns length:", len(X.columns))
