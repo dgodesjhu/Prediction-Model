@@ -25,13 +25,11 @@ class SimpleNN(nn.Module):
         self.fc1 = nn.Linear(input_dim, 16)
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(16, 2)
-        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
         x = self.fc1(x)
         x = self.relu(x)
         x = self.fc2(x)
-        x = self.softmax(x)
         return x
 
 # Train Neural Network
@@ -78,7 +76,9 @@ def main():
         model = train_nn(X_train, y_train.values, X_train.shape[1])
         def predict_fn(data):
             with torch.no_grad():
-                return model(torch.FloatTensor(data)).numpy()
+                logits = model(torch.FloatTensor(data)).numpy()
+                exp_logits = np.exp(logits)
+                return exp_logits / np.sum(exp_logits, axis=1, keepdims=True)
 
     if explainer_choice == 'LIME':
         st.subheader("LIME Explanation (Instance Level)")
@@ -97,7 +97,8 @@ def main():
         if model_choice == 'Random Forest':
             shap_explainer = shap.TreeExplainer(model)
             shap_values = shap_explainer.shap_values(X_test)
-            shap.summary_plot(shap_values, features=X_test, feature_names=X.columns, plot_type='bar', show=False)
+            # Assume binary classification, focus on class 1 (churn)
+            shap.summary_plot(shap_values[1], features=X_test, feature_names=X.columns, plot_type='bar', show=False)
             st.pyplot(plt.gcf())
         else:
             st.write("SHAP for neural networks requires a specialized setup and may be added in a future version.")
