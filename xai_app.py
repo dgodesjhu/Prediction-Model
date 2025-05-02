@@ -102,21 +102,35 @@ def main():
             shap_values = shap_explainer.shap_values(X_test)
             X_test_df = pd.DataFrame(X_test, columns=X.columns)
             
-            # Check if shap_values is a list or array
+            # Handle multiclass vs binary case
             if isinstance(shap_values, list):
-                sv = shap_values[1]  # use class 1 (churn)
+                sv = shap_values[1]  # focus on class 1 (churn)
             else:
                 sv = shap_values
     
-            mean_abs_shap = np.abs(sv).mean(axis=0).flatten()
-            shap_df = pd.DataFrame({'feature': X.columns, 'mean_abs_shap': mean_abs_shap})
-            shap_df = shap_df.sort_values(by='mean_abs_shap', ascending=True)
+            # Compute mean absolute SHAP values
+            mean_abs_shap = np.abs(sv).mean(axis=0)
             
-            plt.figure(figsize=(8, 6))
-            plt.barh(shap_df['feature'], shap_df['mean_abs_shap'])
-            plt.xlabel('Mean Absolute SHAP Value')
-            plt.title('Feature Importance (SHAP)')
-            st.pyplot(plt.gcf())
+            # Flatten if needed (handles multiclass fallback)
+            if mean_abs_shap.ndim > 1:
+                mean_abs_shap = mean_abs_shap.mean(axis=0)
+    
+            # Check length match
+            if mean_abs_shap.shape[0] != len(X.columns):
+                st.error("Shape mismatch between SHAP values and features! Cannot plot.")
+            else:
+                # Build DataFrame for plotting
+                shap_df = pd.DataFrame({'feature': X.columns, 'mean_abs_shap': mean_abs_shap})
+                shap_df = shap_df.sort_values(by='mean_abs_shap', ascending=True)
+    
+                # Plot horizontal bar chart
+                plt.figure(figsize=(8, 6))
+                plt.barh(shap_df['feature'], shap_df['mean_abs_shap'])
+                plt.xlabel('Mean Absolute SHAP Value')
+                plt.title('Feature Importance (SHAP)')
+                st.pyplot(plt.gcf())
+        else:
+            st.write("SHAP for neural networks requires a specialized setup and may be added in a future version.")
 
 if __name__ == "__main__":
     main()
