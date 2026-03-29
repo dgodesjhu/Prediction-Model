@@ -1,0 +1,9 @@
+streamlit>=1.40.0
+torch>=2.6.0
+pandas>=1.5
+numpy>=1.24
+scikit-learn
+matplotlib
+seaborn
+gspread
+google-auth
