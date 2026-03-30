@@ -64,17 +64,17 @@ SCOPES   = ["https://www.googleapis.com/auth/spreadsheets"]
 @st.cache_resource
 def get_sheet():
     try:
-        creds  = Credentials.from_service_account_info(
-            st.secrets["gcp_service_account"],
-            scopes=SCOPES
-        )
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        # Fix newlines in private key in case they got mangled
+        creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+        creds  = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
         client = gspread.authorize(creds)
         sheet  = client.open_by_key(SHEET_ID).sheet1
 
         # Write headers if sheet is empty
         if not sheet.get_all_values():
             sheet.update("A1", [[
-                "JHU_ID", "Timestamp", "Model_Type",
+                "JHU_ID", "Student_Name", "Timestamp", "Model_Type",
                 "Val_AUC", "Holdout_AUC",
                 "Val_F1", "Holdout_F1",
                 "Train_Count", "Hyperparameters"
@@ -348,6 +348,17 @@ if st.button("🚀 Train and Evaluate"):
 
         st.caption(f"🔁 You have trained {st.session_state['train_count']} time(s) this session.")
 
+        # ── Update run tracker ──
+        if "run_history" not in st.session_state:
+            st.session_state["run_history"] = []
+        st.session_state["run_history"].append({
+            "Run":        len(st.session_state["run_history"]) + 1,
+            "Model":      model_type,
+            "Val AUC":    round(val_auc, 4),
+            "Val F1":     round(val_f1, 4),
+            "Settings":   hp_str
+        })
+
         # ── Save state for submission ──
         st.session_state["trained_model"]  = model
         st.session_state["model_type"]     = model_type
@@ -366,6 +377,22 @@ if st.button("🚀 Train and Evaluate"):
     except Exception as e:
         st.error(f"Training error: {str(e)}")
 
+# ── Run tracker ───────────────────────────────────────────────────────────────
+
+if st.session_state.get("run_history"):
+    st.divider()
+    st.subheader("📋 Your Training History")
+    st.caption("Use this to identify your best configuration before submitting.")
+    history_df = pd.DataFrame(st.session_state["run_history"])
+    best_idx   = history_df["Val AUC"].idxmax()
+    st.dataframe(
+        history_df.style.highlight_max(subset=["Val AUC"], color="#d4edda"),
+        use_container_width=True,
+        hide_index=True
+    )
+    best = history_df.loc[best_idx]
+    st.success(f"⭐ Best run so far: Run {int(best['Run'])} — {best['Model']} with Val AUC {best['Val AUC']} | Settings: {best['Settings']}")
+
 # ── Step 4: Holdout submission ─────────────────────────────────────────────────
 
 if st.session_state.get("model_ready"):
@@ -383,49 +410,56 @@ if st.session_state.get("model_ready"):
             prev = existing[st.session_state["confirmed_id"]]
             st.error(f"❌ ID {st.session_state['confirmed_id']} has already submitted. Your holdout AUC was **{prev['Holdout_AUC']}**.")
         else:
+            student_name = st.text_input("Your full name (for the leaderboard)", key="student_name").strip()
+
             if st.button("🏆 Submit for Holdout Scoring"):
-                try:
-                    model      = st.session_state["trained_model"]
-                    model_type = st.session_state["model_type"]
+                if not student_name:
+                    st.warning("Please enter your name before submitting.")
+                else:
+                    try:
+                        model      = st.session_state["trained_model"]
+                        model_type = st.session_state["model_type"]
 
-                    X_holdout = holdout_df.iloc[:, :-1].values.astype(float)
-                    y_holdout = holdout_df.iloc[:, -1].values.astype(float)
+                        X_holdout = holdout_df.iloc[:, :-1].values.astype(float)
+                        y_holdout = holdout_df.iloc[:, -1].values.astype(float)
 
-                    if model_type == "ANN":
-                        if st.session_state.get("standardize") and "scaler" in st.session_state:
-                            X_holdout = st.session_state["scaler"].transform(X_holdout)
-                        X_holdout_t = torch.tensor(X_holdout, dtype=torch.float32)
-                        with torch.no_grad():
-                            holdout_probs = torch.sigmoid(model(X_holdout_t)).numpy().flatten()
-                        holdout_pred = (holdout_probs >= 0.5).astype(int)
-                    else:
-                        holdout_probs = model.predict_proba(X_holdout)[:, 1]
-                        holdout_pred  = model.predict(X_holdout)
+                        if model_type == "ANN":
+                            if st.session_state.get("standardize") and "scaler" in st.session_state:
+                                X_holdout = st.session_state["scaler"].transform(X_holdout)
+                            X_holdout_t = torch.tensor(X_holdout, dtype=torch.float32)
+                            with torch.no_grad():
+                                holdout_probs = torch.sigmoid(model(X_holdout_t)).numpy().flatten()
+                            holdout_pred = (holdout_probs >= 0.5).astype(int)
+                        else:
+                            holdout_probs = model.predict_proba(X_holdout)[:, 1]
+                            holdout_pred  = model.predict(X_holdout)
 
-                    holdout_auc = roc_auc_score(y_holdout, holdout_probs)
-                    holdout_f1  = f1_score(y_holdout, holdout_pred)
+                        holdout_auc = roc_auc_score(y_holdout, holdout_probs)
+                        holdout_f1  = f1_score(y_holdout, holdout_pred)
+                        gap         = holdout_auc - st.session_state["val_auc"]
 
-                    row = [
-                        st.session_state["confirmed_id"],
-                        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        model_type,
-                        round(st.session_state["val_auc"], 4),
-                        round(holdout_auc, 4),
-                        round(st.session_state["val_f1"], 4),
-                        round(holdout_f1, 4),
-                        st.session_state["train_count"],
-                        st.session_state["hp_str"]
-                    ]
+                        row = [
+                            st.session_state["confirmed_id"],
+                            student_name,
+                            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            model_type,
+                            round(st.session_state["val_auc"], 4),
+                            round(holdout_auc, 4),
+                            round(st.session_state["val_f1"], 4),
+                            round(holdout_f1, 4),
+                            st.session_state["train_count"],
+                            st.session_state["hp_str"]
+                        ]
 
-                    if write_submission(sheet, row):
-                        st.success(f"✅ Submitted! Your holdout AUC: **{round(holdout_auc, 3)}**")
-                        st.info(f"Your validation AUC was **{round(st.session_state['val_auc'], 3)}**. Gap: **{round(st.session_state['val_auc'] - holdout_auc, 3)}**")
-                        if st.session_state["val_auc"] - holdout_auc > 0.05:
-                            st.warning("📉 Your validation AUC was notably higher than holdout — classic overfitting.")
-                        elif abs(st.session_state["val_auc"] - holdout_auc) < 0.02:
-                            st.success("📈 Your validation and holdout AUC are very close — well generalised model!")
+                        if write_submission(sheet, row):
+                            st.success(f"✅ Submitted! Your holdout AUC: **{round(holdout_auc, 3)}**")
+                            st.info(f"Validation AUC: **{round(st.session_state['val_auc'], 3)}** → Holdout AUC: **{round(holdout_auc, 3)}** | Gap: **{round(gap, 3)}**")
+                            if gap < -0.05:
+                                st.warning("📉 Your holdout AUC was notably lower than validation — possible overfitting.")
+                            elif abs(gap) < 0.02:
+                                st.success("📈 Validation and holdout AUC are very close — well generalised model!")
 
-                except Exception as e:
-                    st.error(f"Holdout scoring failed: {str(e)}")
+                    except Exception as e:
+                        st.error(f"Holdout scoring failed: {str(e)}")
     else:
         st.button("🏆 Submit for Holdout Scoring", disabled=True)
