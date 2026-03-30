@@ -13,7 +13,6 @@ import seaborn as sns
 import warnings
 import io
 import random
-import json
 from google.oauth2.service_account import Credentials
 import gspread
 from datetime import datetime
@@ -65,13 +64,15 @@ SCOPES   = ["https://www.googleapis.com/auth/spreadsheets"]
 @st.cache_resource
 def get_sheet():
     try:
-        key_dict = json.loads(st.secrets["GOOGLE_SERVICE_ACCOUNT_JSON"])
-        creds    = Credentials.from_service_account_info(key_dict, scopes=SCOPES)
-        client   = gspread.authorize(creds)
-        sheet    = client.open_by_key(SHEET_ID).sheet1
+        creds  = Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"],
+            scopes=SCOPES
+        )
+        client = gspread.authorize(creds)
+        sheet  = client.open_by_key(SHEET_ID).sheet1
 
         # Write headers if sheet is empty
-        if sheet.row_count == 0 or sheet.cell(1, 1).value != "JHU_ID":
+        if not sheet.get_all_values():
             sheet.update("A1", [[
                 "JHU_ID", "Timestamp", "Model_Type",
                 "Val_AUC", "Holdout_AUC",
@@ -427,4 +428,4 @@ if st.session_state.get("model_ready"):
                 except Exception as e:
                     st.error(f"Holdout scoring failed: {str(e)}")
     else:
-        st.error("Leaderboard unavailable. Contact your instructor.")
+        st.button("🏆 Submit for Holdout Scoring", disabled=True)
