@@ -249,6 +249,7 @@ if st.button("🚀 Train and Evaluate"):
         y_val   = valid_df.iloc[:, -1].values.astype(float)
 
         if model_type == "Neural Network":
+            if standardize:
                 scaler  = StandardScaler()
                 X_train = scaler.fit_transform(X_train)
                 X_val   = scaler.transform(X_val)
