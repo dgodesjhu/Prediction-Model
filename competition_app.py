@@ -132,7 +132,7 @@ def load_data(url):
     except:
         return None
 
-# ── ANN ───────────────────────────────────────────────────────────────────────
+# ── Neural Network ────────────────────────────────────────────────────────────
 
 class SimpleANN(nn.Module):
     def __init__(self, input_dim, hidden_layers, nodes, activation):
@@ -207,9 +207,9 @@ with st.expander("Preview training data", expanded=False):
 st.subheader("Step 3: Choose and tune your model")
 
 st.sidebar.header("Model Settings")
-model_type = st.sidebar.selectbox("Model Type", ["Decision Tree", "Random Forest", "Boosted Trees", "ANN"])
+model_type = st.sidebar.selectbox("Model Type", ["Decision Tree", "Random Forest", "Boosted Trees", "Neural Network"])
 
-if model_type == "ANN":
+if model_type == "Neural Network":
     st.sidebar.subheader("Architecture")
     hidden_layers   = st.sidebar.slider("Hidden Layers",    0, 10, 2)
     nodes_per_layer = st.sidebar.slider("Nodes per Layer",  4, max(n_features, 4), 4, step=1)
@@ -248,8 +248,7 @@ if st.button("🚀 Train and Evaluate"):
         X_val   = valid_df.iloc[:, :-1].values.astype(float)
         y_val   = valid_df.iloc[:, -1].values.astype(float)
 
-        if model_type == "ANN":
-            if standardize:
+        if model_type == "Neural Network":
                 scaler  = StandardScaler()
                 X_train = scaler.fit_transform(X_train)
                 X_val   = scaler.transform(X_val)
@@ -297,12 +296,6 @@ if st.button("🚀 Train and Evaluate"):
                 plt.tight_layout()
                 buf = io.BytesIO(); fig.savefig(buf, format="png", dpi=100, bbox_inches="tight"); buf.seek(0)
                 st.image(buf, use_column_width=True); plt.close(fig)
-
-            gap = val_losses[-1] - train_losses[-1]
-            if gap > 0.05:
-                st.warning(f"⚠️ Possible overfitting — val loss is {gap:.3f} above train loss.")
-            elif val_losses[-1] < val_losses[0]:
-                st.success("✅ Model is learning — val loss decreased.")
 
             # Store hyperparams string
             hp_str = f"layers={hidden_layers}, nodes={nodes_per_layer}, act={activation}, lr={learning_rate}, epochs={epochs}"
@@ -385,7 +378,7 @@ if st.button("🚀 Train and Evaluate"):
         st.session_state["val_f1"]         = val_f1
         st.session_state["hp_str"]         = hp_str
         st.session_state["model_ready"]    = True
-        if model_type == "ANN":
+        if model_type == "Neural Network":
             st.session_state["standardize"] = standardize
             st.session_state["ann_params"]  = {
                 "hidden_layers": hidden_layers,
@@ -442,7 +435,7 @@ if st.session_state.get("model_ready"):
                         X_holdout = holdout_df.iloc[:, :-1].values.astype(float)
                         y_holdout = holdout_df.iloc[:, -1].values.astype(float)
 
-                        if model_type == "ANN":
+                        if model_type == "Neural Network":
                             if st.session_state.get("standardize") and "scaler" in st.session_state:
                                 X_holdout = st.session_state["scaler"].transform(X_holdout)
                             X_holdout_t = torch.tensor(X_holdout, dtype=torch.float32)
@@ -473,8 +466,6 @@ if st.session_state.get("model_ready"):
                         if write_submission(sheet, row):
                             st.success(f"✅ Submitted! Your holdout AUC: **{round(holdout_auc, 3)}**")
                             st.info(f"Validation AUC: **{round(st.session_state['val_auc'], 3)}** → Holdout AUC: **{round(holdout_auc, 3)}** | Gap: **{round(gap, 3)}**")
-                            if gap < -0.05:
-                                st.warning("📉 Your holdout AUC was notably lower than validation — possible overfitting.")
 
                     except Exception as e:
                         st.error(f"Holdout scoring failed: {str(e)}")
