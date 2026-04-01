@@ -92,19 +92,6 @@ def get_existing_submissions(sheet):
     except:
         return {}
 
-def is_competition_active():
-    """Check config sheet for active flag."""
-    try:
-        creds_dict = dict(st.secrets["gcp_service_account"])
-        creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-        creds  = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-        client = gspread.authorize(creds)
-        config = client.open_by_key(SHEET_ID).worksheet("config")
-        val    = config.cell(1, 2).value
-        return str(val).strip().lower() == "true"
-    except:
-        return False
-
 def write_submission(sheet, row):
     try:
         sheet.append_row(row)
@@ -150,12 +137,6 @@ class SimpleANN(nn.Module):
 # ── Header ────────────────────────────────────────────────────────────────────
 
 st.title("Prediction Model Explorer — AIM26")
-
-# ── Competition gate ───────────────────────────────────────────────────────────
-
-if not is_competition_active():
-    st.info("🔒 The competition is not currently active. Please wait for your instructor to open it.")
-    st.stop()
 
 # ── Step 1: ID entry ──────────────────────────────────────────────────────────
 
